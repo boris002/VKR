@@ -1,0 +1,13 @@
+<!-- templates/profile.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Личный кабинет</h1>
+<p>Имя пользователя: {{ username }}</p>
+<p>Группы:</p>
+<ul>
+    {% for group in groups %}
+    <li>{{ group.name }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Футбольные матчи</h1>
+{% for match in matches %}
+    <div>
+        <h2>{{ match.idFootball_liga.name }}</h2>
+        <p>Дата матча: {{ match.id_matches.match_date }}</p>
+        <p>Домашняя команда: {{ match.id_matches.home_team }}</p>
+        <p>Гостевая команда: {{ match.id_matches.away_team }}</p>
+        <p>Цена билета: {{ match.price }}</p>
+        <form action="{% url 'buy_ticket' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="match_id" value="{{ match.id }}">
+            <label for="quantity">Количество билетов:</label>
+            <input type="number" id="quantity" name="quantity" min="1" max="{{ match.quantity }}">
+            <button type="submit">Купить</button>
+        </form>
+    </div>
+{% endfor %}
+
+<h1>Хоккейные матчи</h1>
+{% for Hockey_Matche in Hockey_Matches %}
+    <div>
+        <h2>{{ match.idHockey_league.name }}</h2>
+        <p>Дата матча: {{ match.id_matches.match_date }}</p>
+        <p>Домашняя команда: {{ match.id_matches.home_team }}</p>
+        <p>Гостевая команда: {{ match.id_matches.away_team }}</p>
+        <p>Цена билета: {{ match.price }}</p>
+        <form action="{% url 'buy_ticket' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="match_id" value="{{ match.id }}">
+            <label for="quantity">Количество билетов:</label>
+            <input type="number" id="quantity" name="quantity" min="1" max="{{ match.quantity }}">
+            <button type="submit">Купить</button>
+        </form>
+    </div>
+{% endfor %}
+{% endblock %}

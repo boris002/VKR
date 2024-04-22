@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Матчи</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="/static/css/Matches.css" type="text/css">
+    <style>
+        body {
+            background-color: #f7f7f7;
+        }
+
+        .match-card,
+        .standings-card,
+        .news-card {
+            background-color: white;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+        }
+
+        .team-logo {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+        }
+
+        .news-card img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Название сайта</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="{% url 'main' %}">Главная <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Новости</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'football' %}">Футбол</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Формула 1</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'Hockey' %}">Хоккей</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'Basket' %}">Баскетбол</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Киберспорт</a>
+                </li>
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'profile' %}">Личный кабинет</a>
+                </li>
+                <li class="nav-item">
+                    <form action="{% url 'logout' %}" method="post" id="logout-form" style="display: none;">
+                        {% csrf_token %}
+                        <input type="submit" value="Выйти">
+                    </form>
+                    <a class="nav-link" href="#" onclick="document.getElementById('logout-form').submit(); return false;">Выйти</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'login' %}">Вход</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'register' %}">Регистрация</a>
+                 </li>
+                {% endif %}
+                <!-- Добавьте другие виды спорта здесь -->
+            </ul>
+        </div>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Матчи и турнирная таблица для {{ league_name }}</h1>
+        <p class="text-center">Дата: {{ selected_date }}</p>
+    
+        <form action="{% url 'Basket_Matches' id=league_id %}" method="get" class="mb-4">
+            <div class="form-group">
+                <input type="date" name="date" class="form-control" value="{{ selected_date }}">
+                <button type="submit" class="btn btn-primary mt-2">Выбрать дату</button>
+            </div>
+        </form>
+    
+        <div class="row">
+            <!-- Колонка результатов матчей -->
+            <div class="col-md-6">
+                {% for Basket_Match in Basket_Matches %}  <!-- Исправьте здесь на matches -->
+                <a href="#" class="match-card-link">
+                    <div class="match-card">
+                        <div class="row align-items-center">
+                            <div class="col-md-4 text-center">
+                                <img src="{{ Basket_Match.home_team_logo }}" alt="Логотип {{ Basket_Match.home_team }}" class="team-logo">
+                                <p class="mt-2">{{ Basket_Match.home_team }}</p> <!-- Убедитесь, что вы обращаетесь к правильным полям -->
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <p>VS</p>
+                                <p>Счёт: {{ Basket_Match.score }}</p> <!-- Используйте score напрямую из модели -->
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <img src="{{ Basket_Match.away_team_logo }}" alt="Логотип {{ Basket_Match.away_team }}" class="team-logo">
+                                <p class="mt-2">{{ Basket_Match.away_team }}</p> <!-- Убедитесь, что вы обращаетесь к правильным полям -->
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <p>Матчей на выбранную дату не найдено.</p>
+                {% endfor %}
+            </div>
+        
+        
+    
+            <!-- Колонка с кнопками и блоками информации -->
+            <div class="col-md-6">
+                <div class="content-switcher text-center">
+                    <button class="btn btn-info mb-1" onclick="showContent('standings')">Турнирная таблица</button>
+                    <button class="btn btn-info mb-1" onclick="showContent('statistics')">Статистика</button>
+                </div>
+                <div id="standings" class="content-block">
+                    <h2>Турнирная таблица</h2>
+                    
+                </div>
+                
+                <div id="statistics" class="content-block" style="display:none;">
+                    <h2>Статистика</h2>
+                    <p>Статистика скоро появится.</p>
+                </div>
+            </div>
+    
+            <!-- Блок новостей -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="news-card">
+                        <h2>Новости</h2>
+                        <!-- Здесь будет код для отображения новостей и изображений -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+        <script src="/static/js/Matches.js"></script>
+        <script src="/static/js/LeagueScores.js"></script>
+
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+</body>
+
+</html>

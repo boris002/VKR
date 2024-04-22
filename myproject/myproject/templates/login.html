@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card my-5">
+                <div class="card-body">
+                    <h2 class="card-title text-center">Вход в систему</h2>
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        {{ form.non_field_errors }} <!-- Отображение ошибок, не связанных с конкретными полями -->
+                        <div class="form-group">
+                            {{ form.username.label_tag }}
+                            {{ form.username }}
+                            {{ form.username.errors }} <!-- Отображение ошибок поля 'username' -->
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.password.label_tag }}
+                            {{ form.password }}
+                            {{ form.password.errors }} <!-- Отображение ошибок поля 'password' -->
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">Войти</button>
+                        </div>
+                        {% if form.errors %}
+                            <p class="text-danger text-center">Неверное имя пользователя или пароль</p>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

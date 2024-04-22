@@ -1,0 +1,28 @@
+<!-- templates/football.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+    <div class="row">
+        <!-- Блок с выбором лиги -->
+        <div class="col-md-6">
+            <h2 class="text-black">Выберите лигу</h2>
+            {% for liga in football_ligas %}
+            <div class="d-grid gap-2 col-6 mx-10 mb-2">
+                <!-- Обратите внимание на исправленный URL-маршрут 'Matches' -->
+                <a href="{% url 'Matches' liga.idFootball_liga %}" class="btn btn-primary btn-block">
+                    <div>
+                        <span>{{ liga.name }}</span> - <span>{{ liga.country }}</span>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Блок с новостями о футболе (здесь может быть ваш код для новостей) -->
+        <div class="col-md-6">
+            <h2>Футбольные новости</h2>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-3">
+    <div class="row">
+        <!-- Блок с выбором лиги -->
+        <div class="col-md-6">
+            <h2 class="text-white">Выберите лигу</h2>
+            {% for liga in Hockey_leagues %}
+            <div class="mb-2">
+                <!-- Обратите внимание на исправленный URL-маршрут 'Matches' -->
+                <a href="{% url 'Hockey_Matches' liga.id %}" class="btn btn-primary btn-block">
+                    <div>
+                        <span>{{ liga.name }}</span></span>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Блок с новостями о футболе (здесь может быть ваш код для новостей) -->
+        <div class="col-md-6">
+            <h2>Хоккейные новости</h2>
+        </div>
+    </div>
+</div>
+{% endblock %}
