@@ -64,10 +64,13 @@ def matches_view(request, id):
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
 
     # Если дата в пределах последних 10 дней или данных в базе нет, или они не учтены, делаем запрос к API
-    if selected_date_obj.date() >= today or not matches.exists() or matches.filter(accounted=False).exists():
+    if not Match.objects.filter(league=league, match_date__date=selected_date_obj.date()).exists():
         update_matches_from_api(selected_date_obj, league, cutoff_date)
         matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
-    
+
+    elif selected_date_obj.date() >= today:
+        matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
+        update_matches_from_api(selected_date_obj, league, cutoff_date)
     #update_league_scores(matches, teams)
 
     return render(request, 'matches.html', {
@@ -92,7 +95,11 @@ def update_matches_from_api(date, league, cutoff_date):
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
                 stadium_name_translated = translate_text(match_data['fixture']['venue']['name'])
                 city_name_translated = translate_text(match_data['fixture']['venue']['city'])
-                match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z')
+                match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
+                
+                # Обработать изменение дня
+                if match_date.hour >= 21:
+                    match_date += timedelta(days=1)               
                 win = determine_winner(match_data)
 
                 # Используем filter для поиска матчей с теми же атрибутами
@@ -277,7 +284,11 @@ def update_HockeyMatches_from_api(date, league, cutoff_date):
             if match_data['league']['name'] == league.name:
                 home_team_translated = translate_text(match_data['teams']['home']['name'])
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
-                match_date = datetime.strptime(match_data['date'], '%Y-%m-%dT%H:%M:%S%z')
+                match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
+                
+                # Обработать изменение дня
+                if match_date.hour >= 21:
+                    match_date += timedelta(days=1)  
                 score = f"{match_data['scores']['home']} - {match_data['scores']['away']}"
                 win = determine_winner_Hockey(home_team_translated, away_team_translated, score)
 
@@ -433,7 +444,11 @@ def update_BasketMatches_from_api(date, league, cutoff_date):
             if match_data['league']['name'] == league.name:
                 home_team_translated = translate_text(match_data['teams']['home']['name'])
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
-                match_date = datetime.strptime(match_data['date'], '%Y-%m-%dT%H:%M:%S%z')
+                match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
+                
+                # Обработать изменение дня
+                if match_date.hour >= 21:
+                    match_date += timedelta(days=1)  
                 score = f"{match_data['scores']['home']['total']} - {match_data['scores']['away']['total']}"
                 first_quarter =f"{match_data['scores']['home']['quarter_1']} - {match_data['scores']['away']['quarter_1']}"
                 second_quarter =f"{match_data['scores']['home']['quarter_2']} - {match_data['scores']['away']['quarter_2']}"
@@ -491,3 +506,82 @@ def update_BasketMatches_from_api(date, league, cutoff_date):
                     print(f"Создан матч: {home_team_translated} против {away_team_translated} на {match_date.strftime('%Y-%m-%d')}")
     else:
         print(f"Ошибка при подключении к API: {response.status_code}")
+
+def Hockeymatch_details_view(request, league_id, match_id):
+    # Получение лиги и матча по ID
+    league = get_object_or_404(HockeyLeague, pk=league_id)
+    match = get_object_or_404(HockeyMatch, pk=match_id, league=league)
+
+    # Преобразование данных о матче в словарь для передачи в шаблон
+    match_data = {
+        'name': f"{match.home_team} vs {match.away_team}",
+        'teams': {
+            'home': {
+                'name': match.home_team,
+                'logo': match.home_team_logo
+            },
+            'away': {
+                'name': match.away_team,
+                'logo': match.away_team_logo
+            }
+        },
+        'goals': {
+            'home': match.score.split('-')[0].strip(),
+            'away': match.score.split('-')[1].strip(),
+            'home1': match.first_period.split('-')[0].strip(),
+            'away1': match.first_period.split('-')[1].strip(),
+            'home2': match.second_period.split('-')[0].strip(),
+            'away2': match.second_period.split('-')[1].strip(),
+            'home3': match.third_period.split('-')[0].strip(),
+            'away3': match.third_period.split('-')[1].strip(),
+        },
+        'win': match.win,
+        'date': match.match_date.strftime('%Y-%m-%d %H:%M')
+    }
+
+    return render(request, 'match_details.html', {
+        'match': match_data,
+        'league_name': league.name,
+        'country': league.country
+    })
+
+
+def Basketmatch_details_view(request, league_id, match_id):
+    # Получение лиги и матча по ID
+    league = get_object_or_404(BasketLeague, pk=league_id)
+    match = get_object_or_404(BasketMatch, pk=match_id, league=league)
+
+    # Преобразование данных о матче в словарь для передачи в шаблон
+    match_data = {
+        'name': f"{match.home_team} vs {match.away_team}",
+        'teams': {
+            'home': {
+                'name': match.home_team,
+                'logo': match.home_team_logo
+            },
+            'away': {
+                'name': match.away_team,
+                'logo': match.away_team_logo
+            }
+        },
+        'goals': {
+            'home': match.score.split('-')[0].strip(),
+            'away': match.score.split('-')[1].strip(),
+            'home1': match.first_quarter.split('-')[0].strip(),
+            'away1': match.first_quarter.split('-')[1].strip(),
+            'home2': match.second_quarter.split('-')[0].strip(),
+            'away2': match.second_quarter.split('-')[1].strip(),
+            'home3': match.third_quarter.split('-')[0].strip(),
+            'away3': match.third_quarter.split('-')[1].strip(),
+            'home4': match.fourth_quarter.split('-')[0].strip(),
+            'away4': match.fourth_quarter.split('-')[1].strip(),
+        },
+        'win': match.win,
+        'date': match.match_date.strftime('%Y-%m-%d %H:%M')
+    }
+
+    return render(request, 'match_details.html', {
+        'match': match_data,
+        'league_name': league.name,
+        'country': league.country
+    })
