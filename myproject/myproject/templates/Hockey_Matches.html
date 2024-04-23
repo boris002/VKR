@@ -110,7 +110,7 @@
             <!-- Колонка результатов матчей -->
             <div class="col-md-6">
                 {% for Hockey_Match in Hockey_Matches %}  <!-- Исправьте здесь на matches -->
-                <a href="#" class="match-card-link">
+                <a href="{% url 'HockeyMatch_details' league_id=league_id match_id=Hockey_Match.id %}" class="match-card-link">
                     <div class="match-card">
                         <div class="row align-items-center">
                             <div class="col-md-4 text-center">

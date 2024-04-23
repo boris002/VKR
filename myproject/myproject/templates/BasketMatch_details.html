@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            Детали матча
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">{{ match.name }}</h5>
+            <p class="card-text">
+                <strong>Дата и время:</strong> {{ match.date }}<br>
+                <strong>Победитель:</strong> {{ match.win }}
+            </p>
+            <div class="row">
+                <div class="col-md-5 text-center">
+                    <img src="{{ match.teams.home.logo }}" alt="{{ match.teams.home.name }}" class="img-fluid">
+                    <p>{{ match.teams.home.name }}</p>
+                </div>
+                <div class="col-md-2 text-center">
+                    <h3>VS</h3>
+                    <p>Счёт: {{ match.goals.home }} - {{ match.goals.away }}</p>
+                    <p>Счёт по четвертям</p>
+                    <p>1 четверть: {{ match.goals.home1 }} - {{ match.goals.away1 }}
+                    <p>2 четверть: {{ match.goals.home2 }} - {{ match.goals.away2 }}
+                    <p>3 четверть: {{ match.goals.home3 }} - {{ match.goals.away3 }} 
+                    <p>4 четверть: {{ match.goals.home4 }} - {{ match.goals.away4 }} 
+
+                </div>
+                <div class="col-md-5 text-center">
+                    <img src="{{ match.teams.away.logo }}" alt="{{ match.teams.away.name }}" class="img-fluid">
+                    <p>{{ match.teams.away.name }}</p>
+                </div>
+            </div>
+            <button onclick="window.history.back()" class="btn btn-primary">Вернуться к списку матчей</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

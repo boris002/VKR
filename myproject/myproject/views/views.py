@@ -64,7 +64,7 @@ def matches_view(request, id):
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
 
     # Если дата в пределах последних 10 дней или данных в базе нет, или они не учтены, делаем запрос к API
-    if not Match.objects.filter(league=league, match_date__date=selected_date_obj.date()).exists():
+    if not matches.exists() or matches.filter(accounted=False).exists():
         update_matches_from_api(selected_date_obj, league, cutoff_date)
         matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
 
@@ -247,9 +247,13 @@ def Hockey_matches_view(request, id):
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
 
     # Если дата в пределах последних 1 дней или данных в базе нет, или они не учтены, делаем запрос к API
-    if selected_date_obj.date() >= ten_days_ago or not Hockey_matches.exists() or Hockey_matches.filter(accounted=False).exists():
+    if not Hockey_matches.exists() or Hockey_matches.filter(accounted=False).exists():
         update_HockeyMatches_from_api(selected_date_obj, league, cutoff_date)
         Hockey_matches = HockeyMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
+
+    elif selected_date_obj.date() >= today:
+        Hockey_matches = HockeyMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
+        update_HockeyMatches_from_api(selected_date_obj, league, cutoff_date)
     
     #update_league_scores(matches, teams)
 
@@ -267,9 +271,9 @@ def determine_winner_Hockey(home_team, away_team, score):
         home_goals, away_goals = map(int, score.split(' - '))
         goal_difference = abs(home_goals - away_goals)  # Модуль разницы голов
         if home_goals > away_goals:
-            return f"{home_team} won by {goal_difference}"
+            return f"{home_team} Выиграл с разницей в  {goal_difference}"
         elif home_goals < away_goals:
-            return f"{away_team} won by {goal_difference}"
+            return f"{away_team} Выиграл с разницей в {goal_difference}"
         else:
             return 'Draw'
     except ValueError:
@@ -284,7 +288,7 @@ def update_HockeyMatches_from_api(date, league, cutoff_date):
             if match_data['league']['name'] == league.name:
                 home_team_translated = translate_text(match_data['teams']['home']['name'])
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
-                match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
+                match_date = datetime.strptime(match_data['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
                 
                 # Обработать изменение дня
                 if match_date.hour >= 21:
@@ -418,9 +422,13 @@ def Basket_matches_view(request, id):
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
 
     # Если дата в пределах последних 1 дней или данных в базе нет, или они не учтены, делаем запрос к API
-    if selected_date_obj.date() >= ten_days_ago or not Hockey_matches.exists() or Hockey_matches.filter(accounted=False).exists():
+    if not Basket_matches.exists() or Basket_matches.filter(accounted=False).exists():
         update_BasketMatches_from_api(selected_date_obj, league, cutoff_date)
         Basket_matches = BasketMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
+
+    elif selected_date_obj.date() >= today:
+        Basket_matches = BasketMatche.objects.filter(league=league, match_date__date=selected_date_obj.date())
+        update_BasketMatches_from_api(selected_date_obj, league, cutoff_date)
     
     #update_league_scores(matches, teams)
 
@@ -444,7 +452,7 @@ def update_BasketMatches_from_api(date, league, cutoff_date):
             if match_data['league']['name'] == league.name:
                 home_team_translated = translate_text(match_data['teams']['home']['name'])
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
-                match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
+                match_date = datetime.strptime(match_data['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
                 
                 # Обработать изменение дня
                 if match_date.hour >= 21:
@@ -539,10 +547,9 @@ def Hockeymatch_details_view(request, league_id, match_id):
         'date': match.match_date.strftime('%Y-%m-%d %H:%M')
     }
 
-    return render(request, 'match_details.html', {
+    return render(request, 'HockeyMatch_details.html', {
         'match': match_data,
         'league_name': league.name,
-        'country': league.country
     })
 
 
@@ -580,7 +587,7 @@ def Basketmatch_details_view(request, league_id, match_id):
         'date': match.match_date.strftime('%Y-%m-%d %H:%M')
     }
 
-    return render(request, 'match_details.html', {
+    return render(request, 'BasketMatch_details.html', {
         'match': match_data,
         'league_name': league.name,
         'country': league.country
