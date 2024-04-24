@@ -106,9 +106,9 @@ class TicketsType(models.Model):
         return self.name
 
 class TicketsFootball(models.Model):
-    idFootball_liga = models.ForeignKey(FootballLiga, on_delete=models.CASCADE)
-    id_matches = models.ForeignKey(Match, on_delete=models.CASCADE)
-    id_type = models.ForeignKey(TicketsType, on_delete=models.CASCADE)
+    idFootball_liga = models.ForeignKey(FootballLiga, on_delete=models.CASCADE, db_column='idfootball_liga')
+    id_matches = models.ForeignKey(Match, on_delete=models.CASCADE, db_column='id_matches')
+    id_type = models.ForeignKey(TicketsType, on_delete=models.CASCADE,db_column='id_type')
     quantity = models.IntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -121,9 +121,9 @@ class TicketsFootball(models.Model):
         return f"{self.idFootball_liga} - {self.id_matches}"
 
 class TicketsHockey(models.Model):
-    idHockey_league = models.ForeignKey(HockeyLeague, on_delete=models.CASCADE)
-    id_matches = models.ForeignKey(HockeyMatch, on_delete=models.CASCADE)
-    id_type = models.ForeignKey(TicketsType, on_delete=models.CASCADE)
+    idHockey_league = models.ForeignKey(HockeyLeague, on_delete=models.CASCADE, db_column='idHockey_league')
+    id_matches = models.ForeignKey(HockeyMatch, on_delete=models.CASCADE, db_column='id_matches')
+    id_type = models.ForeignKey(TicketsType, on_delete=models.CASCADE, db_column='id_type')
     quantity = models.IntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
 

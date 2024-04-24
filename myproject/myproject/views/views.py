@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch  # Импортируйте модель, соответствующую таблице Matches
+from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet  # Импортируйте модель, соответствующую таблице Matches
 from myproject.api_settings import API_HEADERS_Football, API_HEADERS_Hockey, API_HEADERS_Basket
 import json
 from django.utils import timezone
@@ -13,6 +13,8 @@ import logging
 from django.shortcuts import render
 from googletrans import Translator, LANGUAGES
 from deep_translator import GoogleTranslator
+from django.contrib import messages
+from django.shortcuts import redirect
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
@@ -357,6 +359,7 @@ def buy_ticket(request):
     if request.method == 'POST':
         match_id = request.POST.get('match_id')
         quantity = int(request.POST.get('quantity'))
+        payment_method = request.POST.get('payment_method')
         
         # Получаем информацию о матче
         try:
@@ -387,19 +390,38 @@ def buy_ticket(request):
 
         # Проверяем, достаточно ли у пользователя средств для покупки билетов
         total_price = ticket.price * quantity
-        if wallet.balance >= total_price:
-            # Списываем сумму с кошелька и сохраняем новый баланс
-            wallet.balance -= total_price
-            wallet.save()
+        if payment_method == 'wallet':
+            if wallet.balance >= total_price:
+                # Списываем сумму с кошелька и сохраняем новый баланс
+                wallet.balance -= total_price
+                wallet.save()
 
+                # Уменьшаем количество доступных билетов
+                ticket.quantity -= quantity
+                ticket.save()
+
+                # Здесь можете выполнить другие действия, например, создать запись о покупке билета в базе данных
+
+                messages.success(request, 'Билеты успешно куплены')
+            else:
+                # Если у пользователя недостаточно средств, выводим сообщение об ошибке
+                messages.error(request, 'Недостаточно средств на кошельке')
+                return redirect('tickets')
+        elif payment_method == 'card':
+            # Здесь можете добавить обработку платежа с помощью карты
+            # Предполагается, что здесь будет вызов соответствующего метода для оплаты с карты
+            messages.success(request, 'Оплата с карты успешно произведена')
+            # Уменьшаем количество доступных билетов
+            ticket.quantity -= quantity
+            ticket.save()
             # Здесь можете выполнить другие действия, например, создать запись о покупке билета в базе данных
-
-            messages.success(request, 'Билеты успешно куплены')
+            return redirect('tickets')
         else:
-            # Если у пользователя недостаточно средств, выводим сообщение об ошибке
-            messages.error(request, 'Недостаточно средств на кошельке')
+            # Если не выбран ни один метод оплаты, выводим сообщение об ошибке
+            messages.error(request, 'Выберите метод оплаты')
+            return redirect('tickets')
 
-        return redirect('tickets')
+    return redirect('tickets')
 
 
 def Basket_matches_view(request, id):
