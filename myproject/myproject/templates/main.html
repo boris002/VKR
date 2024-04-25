@@ -88,6 +88,26 @@
             <h1>Добро пожаловать на наш сайт!</h1>
             <p>Здесь вы найдете самые свежие новости о спорте.</p>
         </div>
+
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <h2>Футбольные матчи</h2>
+                    {% for match in football_matches %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ match.home_team }} vs {{ match.away_team }}</h5>
+                            <p class="card-text">Дата: {{ match.match_date }}</p>
+                            <p class="card-text">Результат: {{ match.score }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>На сегодняшний день нет доступных матчей.</p>
+                    {% endfor %}
+                </div>
+                <!-- Здесь можно добавить аналогичный блок для других видов спорта -->
+            </div>
+        </div>
         <div class="container mt-4">
             <div id="carouselExampleCaptions" class="carousel slide">
                 <div class="carousel-indicators">

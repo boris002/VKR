@@ -40,7 +40,19 @@ def translate_text(text, dest_language='ru'):
         # В случае ошибки пытаемся транслитерировать
         return translit(text, 'ru', reversed=True)
 def main_page(request):
-    return render(request, 'main.html')
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
+    
+    # Получаем футбольные матчи, которые прошли вчера и сегодня
+    football_matches = Match.objects.filter(
+        league__in=FootballLiga.objects.all(),  # Фильтруем только по футбольным лигам
+        match_date__date__in=[yesterday, today]  # Фильтруем по датам
+    ).order_by('-match_date')[:5]  # Получаем до 5 матчей и сортируем по дате в обратном порядке
+
+    context = {
+        'football_matches': football_matches,
+    }
+    return render(request, 'main.html', context)
 
 @csrf_exempt
 @require_http_methods(["GET", "POST", "OPTIONS"])
@@ -65,7 +77,7 @@ def matches_view(request, id):
     matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
 
-    # Если дата в пределах последних 10 дней или данных в базе нет, или они не учтены, делаем запрос к API
+    # Если дата в пределах последних 10 дней или данных в базе нет, или они не учтены, делаем запрос к API#
     if not matches.exists() or matches.filter(accounted=False).exists():
         update_matches_from_api(selected_date_obj, league, cutoff_date)
         matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
@@ -146,7 +158,7 @@ def determine_winner(match_data):
         return translate_text(match_data['teams']['home']['name'])
     elif match_data['teams']['away']['winner']:
         return translate_text(match_data['teams']['away']['name'])
-    elif match_data['goals']['home'] == match_data['goals']['away'] and match_data['goals']['home'] !='null':
+    elif match_data['goals']['home'] == match_data['goals']['away'] and match_data['goals']['home'] !='None':
         return 'Ничья'
     else:
         return 'Неопределено'
@@ -614,3 +626,6 @@ def Basketmatch_details_view(request, league_id, match_id):
         'league_name': league.name,
         'country': league.country
     })
+
+
+
