@@ -24,6 +24,7 @@ custom_translations = {
     'Fakel Voronezh': 'Факел Воронеж',
     'Krylya Sovetov': 'Крылья Советов',
     'Rubin': 'Рубин Казань',
+    'Olimpiyskiy Stadion Fisht': 'Фишт арена Сочи'
     # Добавьте другие нестандартные переводы сюда
 }
 
@@ -78,14 +79,12 @@ def matches_view(request, id):
     matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
 
-    # Если дата в пределах последних 10 дней или данных в базе нет, или они не учтены, делаем запрос к API#
+    # Если дата в пределах последних 10 дней или данных в базе нет, или они не учтены, делаем запрос к API
     if not matches.exists() or matches.filter(accounted=False).exists():
         update_matches_from_api(selected_date_obj, league, cutoff_date)
         matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
 
-    elif selected_date_obj.date() >= today:
-        matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
-        update_matches_from_api(selected_date_obj, league, cutoff_date)
+    
     #update_league_scores(matches, teams)
 
     return render(request, 'matches.html', {
@@ -98,6 +97,11 @@ def matches_view(request, id):
         'teams': teams,
     })
 def update_matches_from_api(date, league, cutoff_date):
+    current_time = timezone.now()
+    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+    if current_time - last_save_time < timedelta(minutes=5):
+        print("Недавно были обновления, не обращаемся к API.")
+        return
     api_url = f"https://v3.football.api-sports.io/fixtures?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Football)
 
@@ -116,6 +120,7 @@ def update_matches_from_api(date, league, cutoff_date):
                     match_date += timedelta(days=1)
 
                 match_date += timedelta(hours=3) 
+                win = determine_winner(match_data)
 
                 # Используем filter для поиска матчей с теми же атрибутами
                 existing_matches = Match.objects.filter(
@@ -133,6 +138,8 @@ def update_matches_from_api(date, league, cutoff_date):
                 if existing_matches.exists():
                     match = existing_matches.first()
                     match.accounted = True if match_date < cutoff_date else False
+                    match.save()
+                    match.Save_time = datetime.now()  # Обновляем время сохранения
                     match.save()
                     print(f"Обновлен матч: {match}")
                 else:
@@ -271,14 +278,11 @@ def Hockey_matches_view(request, id):
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
 
     # Если дата в пределах последних 1 дней или данных в базе нет, или они не учтены, делаем запрос к API
-    if not Hockey_matches.exists() or Hockey_matches.filter(accounted=False).exists():
+    if not Hockey_matches.exists() or matches.filter(accounted=False).exists():
         update_HockeyMatches_from_api(selected_date_obj, league, cutoff_date)
         Hockey_matches = HockeyMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
 
-    elif selected_date_obj.date() >= today:
-        Hockey_matches = HockeyMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
-        update_HockeyMatches_from_api(selected_date_obj, league, cutoff_date)
-    
+   
     #update_league_scores(matches, teams)
 
     return render(request, 'Hockey_Matches.html', {
@@ -304,6 +308,10 @@ def determine_winner_Hockey(home_team, away_team, score):
         return 'Неопределено'
 
 def update_HockeyMatches_from_api(date, league, cutoff_date):
+    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+    if datetime.now() - last_save_time < timedelta(minutes=5):
+        print("Недавно были обновления, не обращаемся к API.")
+        return
     api_url = f"https://v1.hockey.api-sports.io/games?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Hockey)
     if response.status_code == 200:
@@ -347,6 +355,8 @@ def update_HockeyMatches_from_api(date, league, cutoff_date):
                 if existing_matches.exists():
                     match = existing_matches.first()
                     match.accounted = accounted
+                    match.save()
+                    match.Save_time = datetime.now()  # Обновляем время сохранения
                     match.save()
                     print(f"Обновлен матч: {home_team_translated} против {away_team_translated} на {match_date.strftime('%Y-%m-%d')}")
                 else:
@@ -465,14 +475,11 @@ def Basket_matches_view(request, id):
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
 
     # Если дата в пределах последних 1 дней или данных в базе нет, или они не учтены, делаем запрос к API
-    if not Basket_matches.exists() or Basket_matches.filter(accounted=False).exists():
+    if not Basket_matches.exists() :
         update_BasketMatches_from_api(selected_date_obj, league, cutoff_date)
         Basket_matches = BasketMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
 
-    elif selected_date_obj.date() >= today:
-        Basket_matches = BasketMatche.objects.filter(league=league, match_date__date=selected_date_obj.date())
-        update_BasketMatches_from_api(selected_date_obj, league, cutoff_date)
-    
+
     #update_league_scores(matches, teams)
 
     return render(request, 'Basket_Matches.html', {
@@ -487,6 +494,10 @@ def Basket_matches_view(request, id):
 
 
 def update_BasketMatches_from_api(date, league, cutoff_date):
+    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+    if datetime.now() - last_save_time < timedelta(minutes=5):
+        print("Недавно были обновления, не обращаемся к API.")
+        return
     api_url = f"https://v1.basketball.api-sports.io/games?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Basket)
     if response.status_code == 200:
@@ -534,6 +545,8 @@ def update_BasketMatches_from_api(date, league, cutoff_date):
                 if existing_matches.exists():
                     match = existing_matches.first()
                     match.accounted = accounted
+                    match.save()
+                    match.Save_time = datetime.now()  # Обновляем время сохранения
                     match.save()
                     print(f"Обновлен матч: {home_team_translated} против {away_team_translated} на {match_date.strftime('%Y-%m-%d')}")
                 else:
@@ -638,6 +651,11 @@ def Basketmatch_details_view(request, league_id, match_id):
 
 
 def update_matches_for_all_leagues(date, cutoff_date):
+    print('z')
+    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+    if datetime.now() - last_save_time < timedelta(minutes=5):
+        print("Недавно были обновления, не обращаемся к API.")
+        return
     api_url = f"https://v3.football.api-sports.io/fixtures?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Football)
 
@@ -676,6 +694,8 @@ def update_matches_for_all_leagues(date, cutoff_date):
                         match = existing_matches.first()
                         match.accounted = True if match_date < cutoff_date else False
                         match.save()
+                        match.Save_time = datetime.now()  # Обновляем время сохранения
+                        match.save()
                         print(f"Обновлен матч: {match}")
                     else:
                         match = Match.objects.create(
@@ -698,6 +718,10 @@ def update_matches_for_all_leagues(date, cutoff_date):
 
 
 def update_HockeyMatches_from_all_leagues(date,cutoff_date):
+    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+    if datetime.now() - last_save_time < timedelta(minutes=5):
+        print("Недавно были обновления, не обращаемся к API.")
+        return
     api_url = f"https://v1.hockey.api-sports.io/games?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Hockey)
     if response.status_code == 200:
@@ -743,6 +767,8 @@ def update_HockeyMatches_from_all_leagues(date,cutoff_date):
                         match = existing_matches.first()
                         match.accounted = accounted
                         match.save()
+                        match.Save_time = datetime.now()  # Обновляем время сохранения
+                        match.save()
                         print(f"Обновлен матч: {home_team_translated} против {away_team_translated} на {match_date.strftime('%Y-%m-%d')}")
                     else:
                         match = HockeyMatch.objects.create(
@@ -767,6 +793,10 @@ def update_HockeyMatches_from_all_leagues(date,cutoff_date):
 
 
 def update_BasketMatches_from_api(date,cutoff_date):
+    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+    if datetime.now() - last_save_time < timedelta(minutes=5):
+        print("Недавно были обновления, не обращаемся к API.")
+        return
     api_url = f"https://v1.basketball.api-sports.io/games?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Basket)
     if response.status_code == 200:

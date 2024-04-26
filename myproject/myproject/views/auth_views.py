@@ -9,6 +9,8 @@ from django.views.generic.edit import FormView
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -63,8 +65,14 @@ class CustomLogoutView(LogoutView):
         return self.post(request, *args, **kwargs)
 
 def profile_view(request):
-    groups = request.user.groups.all()
-    return render(request, 'profile.html', {
-        'username': request.user.username,
-        'groups': groups
-    })
+    if request.method == 'POST':
+        # Здесь логика обновления информации пользователя
+        user = request.user
+        user.first_name = request.POST.get('first_name')
+        user.last_name = request.POST.get('last_name')
+        user.email = request.POST.get('email')
+        user.save()
+        messages.success(request, 'Профиль успешно обновлен.')
+        return redirect('profile')  # Укажите здесь имя URL-адреса вашего профиля
+
+    return render(request, 'profile.html', {'user': request.user})

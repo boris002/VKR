@@ -30,6 +30,7 @@ class Match(models.Model):
     city_name = models.CharField(max_length=255, blank=True, null=True)
     accounted = models.BooleanField(default=False)
     win = models.CharField(max_length=255, blank=True, null=True)
+    Save_time = models.DateTimeField(auto_now=True)  # Если время матча тоже важно
 
 
     class Meta:

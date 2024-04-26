@@ -1,13 +1,82 @@
 <!-- templates/profile.html -->
 {% extends 'base.html' %}
 
+{% block extra_styles %}
+<style>
+    /* Стили для профиля */
+    .profile-section {
+        display: flex;
+        justify-content: space-between;
+    }
+    .profile-info, .tickets-section, .recent-matches-section {
+        flex: 1;
+        margin-right: 20px;
+    }
+    .profile-edit-form input,
+    .profile-edit-form button {
+        display: block;
+        margin-bottom: 10px;
+    }
+    .change-password {
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1>Личный кабинет</h1>
-<p>Имя пользователя: {{ username }}</p>
-<p>Группы:</p>
-<ul>
-    {% for group in groups %}
-    <li>{{ group.name }}</li>
-    {% endfor %}
-</ul>
+<div class="profile-section">
+    <div class="profile-info">
+        <h1>Личный кабинет</h1>
+        <p>Имя пользователя: {{ user.username }}</p>
+        <p>Email: {{ user.email }}</p>
+        <p>Имя: {{ user.first_name }}</p>
+        <p>Фамилия: {{ user.last_name }}</p>
+        <p>Группы:</p>
+        <ul>
+            {% for group in user.groups.all %}
+            <li>{{ group.name }}</li>
+            {% endfor %}
+        </ul>
+        <button id="edit-btn" class="btn btn-primary">Редактировать</button>
+    </div>
+    <div class="tickets-section">
+        <!-- Здесь разместите информацию о билетах пользователя -->
+        <h2>Купленные билеты</h2>
+        <!-- Дополните этот блок с информацией о билетах -->
+    </div>
+</div>
+
+<!-- Форма редактирования профиля -->
+<div class="profile-edit-form" style="display:none;">
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="first_name" value="{{ user.first_name }}" class="form-control" disabled>
+        <input type="text" name="last_name" value="{{ user.last_name }}" class="form-control" disabled>
+        <input type="email" name="email" value="{{ user.email }}" class="form-control" disabled>
+        <button type="submit" class="btn btn-success">Сохранить изменения</button>
+    </form>
+</div>
+
+<div class="change-password">
+    <button class="btn btn-primary" onclick="window.location.href='{% url 'password_change' %}'">Изменить пароль</button>
+</div>
+
+<!-- Раздел для отображения последних матчей -->
+<div class="recent-matches-section">
+    <h2>История просмотров</h2>
+    <!-- Здесь отображайте последние матчи, которые просмотрел пользователь -->
+</div>
+
+{% block extra_scripts %}
+<script>
+    document.getElementById('edit-btn').addEventListener('click', function() {
+        var editForm = document.querySelector('.profile-edit-form');
+        editForm.style.display = 'block';
+        var inputs = editForm.querySelectorAll('input');
+        inputs.forEach(function(input) {
+            input.disabled = false;
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %}
