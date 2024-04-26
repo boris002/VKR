@@ -15,6 +15,7 @@ from googletrans import Translator, LANGUAGES
 from deep_translator import GoogleTranslator
 from django.contrib import messages
 from django.shortcuts import redirect
+from threading import Thread
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
@@ -109,12 +110,12 @@ def update_matches_from_api(date, league, cutoff_date):
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
                 stadium_name_translated = translate_text(match_data['fixture']['venue']['name'])
                 city_name_translated = translate_text(match_data['fixture']['venue']['city'])
-                match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
-                
-                # Обработать изменение дня
+                match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z')
+
                 if match_date.hour >= 21:
-                    match_date += timedelta(days=1)               
-                win = determine_winner(match_data)
+                    match_date += timedelta(days=1)
+
+                match_date += timedelta(hours=3) 
 
                 # Используем filter для поиска матчей с теми же атрибутами
                 existing_matches = Match.objects.filter(
@@ -201,8 +202,17 @@ def match_details_view(request, league_id, match_id):
     })
 def football_view(request):
     football_ligas = FootballLiga.objects.all().order_by('name')
+    today = timezone.now().date()
+    cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
+    yesterday = today - timedelta(days=1)
+    
+    # Запускаем выполнение функции update_matches_for_all_leagues в отдельном потоке для сегодняшнего и вчерашнего дней
+    thread_today = Thread(target=update_matches_for_all_leagues, args=(today, cutoff_date))
+    thread_yesterday = Thread(target=update_matches_for_all_leagues, args=(yesterday, cutoff_date))
+    thread_today.start()
+    thread_yesterday.start()
+    
     return render(request, 'football.html', {'football_ligas': football_ligas})
-
 def Hockey_view(request):
     Hockey_leagues = HockeyLeague.objects.all().order_by('name')
     return render(request, 'Hockey.html', {'Hockey_leagues': Hockey_leagues})
@@ -302,11 +312,10 @@ def update_HockeyMatches_from_api(date, league, cutoff_date):
             if match_data['league']['name'] == league.name:
                 home_team_translated = translate_text(match_data['teams']['home']['name'])
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
-                match_date = datetime.strptime(match_data['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
-                
-                # Обработать изменение дня
                 if match_date.hour >= 21:
-                    match_date += timedelta(days=1)  
+                    match_date += timedelta(days=1)
+
+                match_date += timedelta(hours=3)  
                 score = f"{match_data['scores']['home']} - {match_data['scores']['away']}"
                 win = determine_winner_Hockey(home_team_translated, away_team_translated, score)
 
@@ -486,11 +495,10 @@ def update_BasketMatches_from_api(date, league, cutoff_date):
             if match_data['league']['name'] == league.name:
                 home_team_translated = translate_text(match_data['teams']['home']['name'])
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
-                match_date = datetime.strptime(match_data['date'], '%Y-%m-%dT%H:%M:%S%z') + timedelta(hours=3)
-                
-                # Обработать изменение дня
                 if match_date.hour >= 21:
-                    match_date += timedelta(days=1)  
+                        match_date += timedelta(days=1)
+
+                match_date += timedelta(hours=3)  
                 score = f"{match_data['scores']['home']['total']} - {match_data['scores']['away']['total']}"
                 first_quarter =f"{match_data['scores']['home']['quarter_1']} - {match_data['scores']['away']['quarter_1']}"
                 second_quarter =f"{match_data['scores']['home']['quarter_2']} - {match_data['scores']['away']['quarter_2']}"
@@ -629,3 +637,60 @@ def Basketmatch_details_view(request, league_id, match_id):
 
 
 
+def update_matches_for_all_leagues(date, cutoff_date):
+    api_url = f"https://v3.football.api-sports.io/fixtures?date={date.strftime('%Y-%m-%d')}"
+    response = requests.get(api_url, headers=API_HEADERS_Football)
+
+    if response.status_code == 200:
+        api_matches = response.json().get('response', [])
+
+        for league in FootballLiga.objects.all():
+            for match_data in api_matches:
+                if match_data['league']['name'] == league.name and match_data['league']['country'] == league.country:
+                    home_team_translated = translate_text(match_data['teams']['home']['name'])
+                    away_team_translated = translate_text(match_data['teams']['away']['name'])
+                    stadium_name_translated = translate_text(match_data['fixture']['venue']['name'])
+                    city_name_translated = translate_text(match_data['fixture']['venue']['city'])
+                    match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z')
+
+                    if match_date.hour >= 21:
+                        match_date += timedelta(days=1)
+
+                    match_date += timedelta(hours=3)                
+                    win = determine_winner(match_data)
+
+                    # Используем filter для поиска матчей с теми же атрибутами
+                    existing_matches = Match.objects.filter(
+                        league=league,
+                        match_date=match_date,
+                        home_team=home_team_translated,
+                        away_team=away_team_translated,
+                        stadium_name=stadium_name_translated,
+                        city_name=city_name_translated,
+                        score=f"{match_data['goals']['home']} - {match_data['goals']['away']}",
+                        win=win
+                    )
+
+                    # Если найден матч, обновляем его, иначе создаем новый
+                    if existing_matches.exists():
+                        match = existing_matches.first()
+                        match.accounted = True if match_date < cutoff_date else False
+                        match.save()
+                        print(f"Обновлен матч: {match}")
+                    else:
+                        match = Match.objects.create(
+                            league=league,
+                            match_date=match_date,
+                            home_team=home_team_translated,
+                            home_team_logo=match_data['teams']['home']['logo'],
+                            away_team=away_team_translated,
+                            away_team_logo=match_data['teams']['away']['logo'],
+                            score=f"{match_data['goals']['home']} - {match_data['goals']['away']}",
+                            stadium_name=stadium_name_translated,
+                            city_name=city_name_translated,
+                            accounted=True if match_date < cutoff_date else False,
+                            win=win
+                        )
+                        print(f"Создан матч: {match}")
+    else:
+        print(f"Ошибка при подключении к API: {response.status_code}")
