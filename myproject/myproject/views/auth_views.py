@@ -8,6 +8,7 @@ from django.views import View
 from django.views.generic.edit import FormView
 from django import forms
 from django.contrib.auth.models import User
+from django.contrib.auth.models import Group
 
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -39,7 +40,11 @@ class RegisterView(FormView):
     success_url = reverse_lazy('main')
 
     def form_valid(self, form):
-        user = form.save()
+        user = form.save()  # Сохраняем пользователя
+        group = Group.objects.get(name='auth+')  # Получаем группу "auth+"
+        user.groups.add(group)  # Добавляем пользователя в группу "auth+"
+        user.save()  # Сохраняем изменения пользователя
+        
         if user is not None:
             login(self.request, user)
         return super(RegisterView, self).form_valid(form)

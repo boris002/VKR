@@ -17,6 +17,7 @@ Including another URLconf
 from django.urls import path
 from .views.views import main_page, matches_view, football_view, match_details_view,Hockey_matches_view, Hockey_view, tickets,buy_ticket, Basket_view, Basket_matches_view,Hockeymatch_details_view,Basketmatch_details_view
 from .views.auth_views import CustomLoginView, CustomLogoutView, RegisterView, profile_view
+from django.contrib import admin
 
 urlpatterns = [
 
@@ -36,6 +37,7 @@ urlpatterns = [
     path('Basket_Matches/<int:id>/', Basket_matches_view, name='Basket_Matches'),
     path('Hockeymatch-details/<int:league_id>/<int:match_id>/', Hockeymatch_details_view, name='HockeyMatch_details'),
     path('Basket-details/<int:league_id>/<int:match_id>/', Basketmatch_details_view, name='BasketMatch_details'),
+    path('admin/', admin.site.urls),
 
 
 
