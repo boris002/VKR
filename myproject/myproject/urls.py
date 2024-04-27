@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views.views import main_page, matches_view, football_view, match_details_view,Hockey_matches_view, Hockey_view, tickets,buy_ticket, Basket_view, Basket_matches_view,Hockeymatch_details_view,Basketmatch_details_view
+from .views.views import main_page, matches_view, football_view, match_details_view,Hockey_matches_view, Hockey_view, tickets,buy_ticket, Basket_view, Basket_matches_view,Hockeymatch_details_view,Basketmatch_details_view, edit_league_details
 from .views.auth_views import CustomLoginView, CustomLogoutView, RegisterView, profile_view
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
@@ -41,6 +41,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),
     path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
-
+    path('edit/<int:league_id>/', edit_league_details, name = 'edit')
 
 ]

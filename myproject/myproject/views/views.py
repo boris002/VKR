@@ -84,7 +84,8 @@ def matches_view(request, id):
         update_matches_from_api(selected_date_obj, league, cutoff_date)
         matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
 
-    
+    # Проверка на принадлежность пользователя к группе "journalists"
+    is_journalist = request.user.groups.filter(name='journalists').exists()
     #update_league_scores(matches, teams)
 
     return render(request, 'matches.html', {
@@ -95,6 +96,7 @@ def matches_view(request, id):
         'selected_date': selected_date,
         'league_id': league_id,
         'teams': teams,
+        'is_journalist': is_journalist,
     })
 def update_matches_from_api(date, league, cutoff_date):
     current_time = timezone.now()
@@ -868,3 +870,35 @@ def update_BasketMatches_from_api(date,cutoff_date):
     else:
         print(f"Ошибка при подключении к API: {response.status_code}")
 
+def edit_league_details(request, league_id):
+    league = get_object_or_404(FootballLiga, pk=league_id)
+    
+    if request.method == 'POST':
+        # Обновление результатов матчей
+        matches = Match.objects.filter(league=league)
+        for match in matches:
+            match_score = request.POST.get(f'score_{match.id}', None)
+            if match_score:
+                match.score = match_score
+                match.accounted = True  # предположим, что матч теперь учтен
+                match.save()
+
+        # Обновление очков в турнирной таблице
+        teams = LeagueScore.objects.filter(league=league)
+        for team in teams:
+            team_points = request.POST.get(f'points_{team.id}', None)
+            if team_points:
+                team.points = int(team_points)
+                team.save()
+
+        # Перенаправляем на ту же страницу для отображения обновлённых данных
+        return redirect('edit.html', league_id=league_id)
+
+    else:
+        matches = Match.objects.filter(league=league)
+        teams = LeagueScore.objects.filter(league=league).order_by('-points')
+        return render(request, 'edit.html', {
+            'league': league,
+            'matches': matches,
+            'teams': teams
+        })

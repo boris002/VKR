@@ -185,3 +185,37 @@ class BasketMatch(models.Model):
 
     def __str__(self):
         return f"{self.home_team} vs {self.away_team} on {self.match_date.strftime('%Y-%m-%d')}"
+
+
+def edit_league_details(request, league_id):
+    league = get_object_or_404(FootballLiga, pk=league_id)
+    
+    if request.method == 'POST':
+        # Обновление результатов матчей
+        matches = Match.objects.filter(league=league)
+        for match in matches:
+            match_score = request.POST.get(f'score_{match.id}', None)
+            if match_score:
+                match.score = match_score
+                match.accounted = True  # предположим, что матч теперь учтен
+                match.save()
+
+        # Обновление очков в турнирной таблице
+        teams = LeagueScore.objects.filter(league=league)
+        for team in teams:
+            team_points = request.POST.get(f'points_{team.id}', None)
+            if team_points:
+                team.points = int(team_points)
+                team.save()
+
+        # Перенаправляем на ту же страницу для отображения обновлённых данных
+        return redirect('edit_league_details', league_id=league_id)
+
+    else:
+        matches = Match.objects.filter(league=league)
+        teams = LeagueScore.objects.filter(league=league).order_by('-points')
+        return render(request, 'edit_league_details.html', {
+            'league': league,
+            'matches': matches,
+            'teams': teams
+        })

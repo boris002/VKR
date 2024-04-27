@@ -34,7 +34,7 @@
     <div class="container mt-4">
         <h1 class="text-center mb-4">Матчи и турнирная таблица для {{ league_name }} в {{ country }}</h1>
         <p class="text-center">Дата: {{ selected_date }}</p>
-    
+        <a href="{% url 'edit' league_id=league_id %}" class="btn btn-warning">Редактировать</a>
         <form action="{% url 'Matches' id=league_id %}" method="get" class="mb-4">
             <div class="form-group">
                 <input type="date" name="date" class="form-control" value="{{ selected_date }}">
@@ -125,8 +125,7 @@
     </div>
     
     {% block extra_scripts %}
-    <script src="/static/js/Matches.js"></script>
-    <script src="/static/js/LeagueScores.js"></script>
-    {% endblock %}
     
-{% endblock %}
+    {% endblock %}
+    {% endblock %}
+   

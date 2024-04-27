@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Редактирование: {{ league.name }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <h2>Матчи</h2>
+        {% for match in matches %}
+        <div>
+            <label for="score_{{ match.id }}">Счёт:</label>
+            <input type="text" id="score_{{ match.id }}" name="score_{{ match.id }}" value="{{ match.score }}">
+        </div>
+        {% endfor %}
+        <h2>Турнирная таблица</h2>
+        {% for team in teams %}
+        <div>
+            <label for="points_{{ team.id }}">Очки:</label>
+            <input type="number" id="points_{{ team.id }}" name="points_{{ team.id }}" value="{{ team.points }}">
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+    </form>
+</div>
+{% endblock %}
