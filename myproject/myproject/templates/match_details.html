@@ -25,6 +25,47 @@
                     <img src="{{ match.teams.away.logo }}" alt="{{ match.teams.away.name }}" class="img-fluid">
                     <p>{{ match.teams.away.name }}</p>
                 </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <h5>Голы (домашняя команда)</h5>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Игрок</th>
+                                    <th>Время</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for goal, time in match.goals.home_details %}
+                                <tr>
+                                    <td>{{ goal }}</td>
+                                    <td>{{ time }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-4 offset-md-4">
+                        <h5>Голы (гостевая команда)</h5>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Игрок</th>
+                                    <th>Время</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for goal, time in match.goals.away_details %}
+                                <tr>
+                                    <td>{{ goal }}</td>
+                                    <td>{{ time }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
             </div>
             <button onclick="window.history.back()" class="btn btn-primary">Вернуться к списку матчей</button>
         </div>

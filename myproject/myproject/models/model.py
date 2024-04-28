@@ -33,8 +33,8 @@ class Match(models.Model):
     Save_time = models.DateTimeField(auto_now=True)
     Home_goals = models.CharField(max_length=255)
     Away_goals = models.CharField(max_length=255)
-    time_Hgoals = models.IntegerField(default=0)
-    time_Agoals = models.IntegerField(default=0)
+    time_Hgoals = models.CharField(max_length=255)
+    time_Agoals = models.CharField(max_length=255)
 
 
     class Meta:

@@ -185,6 +185,12 @@ def match_details_view(request, league_id, match_id):
     league = get_object_or_404(FootballLiga, pk=league_id)
     match = get_object_or_404(Match, pk=match_id, league=league)
 
+    # Обработка данных о голах
+    home_goals_list = match.Home_goals.split(',') if match.Home_goals else []
+    home_times_list = match.time_Hgoals.split(',') if match.time_Hgoals else []
+    away_goals_list = match.Away_goals.split(',') if match.Away_goals else []
+    away_times_list = match.time_Agoals.split(',') if match.time_Agoals else []
+
     # Преобразование данных о матче в словарь для передачи в шаблон
     match_data = {
         'name': f"{match.home_team} vs {match.away_team}",
@@ -200,7 +206,9 @@ def match_details_view(request, league_id, match_id):
         },
         'goals': {
             'home': match.score.split('-')[0].strip(),
-            'away': match.score.split('-')[1].strip()
+            'away': match.score.split('-')[1].strip(),
+            'home_details': list(zip(home_goals_list, home_times_list)),
+            'away_details': list(zip(away_goals_list, away_times_list))
         },
         'fixture': {
             'venue': {
@@ -216,6 +224,7 @@ def match_details_view(request, league_id, match_id):
         'league_name': league.name,
         'country': league.country
     })
+
 def football_view(request):
     football_ligas = FootballLiga.objects.all().order_by('name')
     today = timezone.now().date()
@@ -893,8 +902,8 @@ def edit_league_details(request, league_id):
             match.score = request.POST.get(f'score_{match.id}', match.score)
             match.Home_goals = request.POST.get(f'home_goals_{match.id}', match.Home_goals)
             match.Away_goals = request.POST.get(f'away_goals_{match.id}', match.Away_goals)
-            match.time_Hgoals = int(request.POST.get(f'time_Hgoals_{match.id}', 0))
-            match.time_Agoals = int(request.POST.get(f'time_Agoals_{match.id}', 0))
+            match.time_Hgoals = request.POST.get(f'time_Hgoals_{match.id}', 0)
+            match.time_Agoals = request.POST.get(f'time_Agoals_{match.id}', 0)
             match.save()
 
         teams = LeagueScore.objects.filter(league=league)
