@@ -2,24 +2,75 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Редактирование: {{ league.name }}</h1>
+    <h1>Edit League: {{ league.name }}</h1>
+    <div class="mb-3">
+        <form action="" method="get">
+            <label for="matchDate" class="form-label">Select Date:</label>
+            <input type="date" class="form-control" id="matchDate" name="matchDate" value="{{ selected_date }}">
+            <button type="submit" class="btn btn-secondary mt-2">Filter Matches</button>
+        </form>
+    </div>
     <form method="post">
         {% csrf_token %}
-        <h2>Матчи</h2>
-        {% for match in matches %}
-        <div>
-            <label for="score_{{ match.id }}">Счёт:</label>
-            <input type="text" id="score_{{ match.id }}" name="score_{{ match.id }}" value="{{ match.score }}">
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            {% for match in matches %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <img src="{{ match.home_team_logo }}" alt="{{ match.home_team }}" style="height:50px;">
+                        <strong>{{ match.home_team }}</strong> vs <strong>{{ match.away_team }}</strong>
+                        <img src="{{ match.away_team_logo }}" alt="{{ match.away_team }}" style="height:50px;">
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="score_{{ match.id }}">Score:</label>
+                            <input type="text" class="form-control" id="score_{{ match.id }}" name="score_{{ match.id }}" value="{{ match.score }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="home_goals_{{ match.id }}">Home Goals (Players):</label>
+                            <input type="text" class="form-control" id="home_goals_{{ match.id }}" name="home_goals_{{ match.id }}" value="{{ match.Home_goals }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="away_goals_{{ match.id }}">Away Goals (Players):</label>
+                            <input type="text" class="form-control" id="away_goals_{{ match.id }}" name="away_goals_{{ match.id }}" value="{{ match.Away_goals }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="time_Hgoals_{{ match.id }}">Time of Home Goals:</label>
+                            <input type="number" class="form-control" id="time_Hgoals_{{ match.id }}" name="time_Hgoals_{{ match.id }}" value="{{ match.time_Hgoals }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="time_Agoals_{{ match.id }}">Time of Away Goals:</label>
+                            <input type="number" class="form-control" id="time_Agoals_{{ match.id }}" name="time_Agoals_{{ match.id }}" value="{{ match.time_Agoals }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p>No matches found for the selected date.</p>
+            {% endfor %}
         </div>
-        {% endfor %}
-        <h2>Турнирная таблица</h2>
-        {% for team in teams %}
-        <div>
-            <label for="points_{{ team.id }}">Очки:</label>
-            <input type="number" id="points_{{ team.id }}" name="points_{{ team.id }}" value="{{ team.points }}">
+        <h2 class="mt-4">League Table</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Team</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for team in teams %}
+                    <tr>
+                        <td>{{ team.name }}</td>
+                        <td>
+                            <input type="number" class="form-control" id="points_{{ team.id }}" name="points_{{ team.id }}" value="{{ team.points }}">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% endfor %}
-        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+        <button type="submit" class="btn btn-primary mt-3">Save Changes</button>
     </form>
 </div>
 {% endblock %}

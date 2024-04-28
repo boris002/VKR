@@ -16,6 +16,7 @@ from deep_translator import GoogleTranslator
 from django.contrib import messages
 from django.shortcuts import redirect
 from threading import Thread
+from django.core.exceptions import ObjectDoesNotExist
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
@@ -98,22 +99,30 @@ def matches_view(request, id):
         'teams': teams,
         'is_journalist': is_journalist,
     })
+
+
+
+
 def update_matches_from_api(date, league, cutoff_date):
     current_time = timezone.now()
-    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
-    if current_time - last_save_time < timedelta(minutes=5):
-        print("Недавно были обновления, не обращаемся к API.")
-        return
+    try:
+        last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+        if current_time - last_save_time < timedelta(minutes=5):
+            print("Недавно были обновления, не обращаемся к API.")
+            return
+    except ObjectDoesNotExist:
+        print("Нет сохраненных матчей в базе данных, обращаемся к API.")
+
     api_url = f"https://v3.football.api-sports.io/fixtures?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Football)
-
     if response.status_code == 200:
         api_matches = response.json().get('response', [])
-
         for match_data in api_matches:
             if match_data['league']['name'] == league.name and match_data['league']['country'] == league.country:
                 home_team_translated = translate_text(match_data['teams']['home']['name'])
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
+                home_team_logo = match_data['teams']['home']['logo']
+                away_team_logo = match_data['teams']['away']['logo']
                 stadium_name_translated = translate_text(match_data['fixture']['venue']['name'])
                 city_name_translated = translate_text(match_data['fixture']['venue']['city'])
                 match_date = datetime.strptime(match_data['fixture']['date'], '%Y-%m-%dT%H:%M:%S%z')
@@ -121,46 +130,44 @@ def update_matches_from_api(date, league, cutoff_date):
                 if match_date.hour >= 21:
                     match_date += timedelta(days=1)
 
-                match_date += timedelta(hours=3) 
-                win = determine_winner(match_data)
+                match_date += timedelta(hours=3)
+                new_score = f"{match_data['goals']['home']} - {match_data['goals']['away']}"
 
-                # Используем filter для поиска матчей с теми же атрибутами
-                existing_matches = Match.objects.filter(
+                # Поиск существующих матчей без учета счета
+                existing_match = Match.objects.filter(
                     league=league,
                     match_date=match_date,
                     home_team=home_team_translated,
-                    away_team=away_team_translated,
-                    stadium_name=stadium_name_translated,
-                    city_name=city_name_translated,
-                    score=f"{match_data['goals']['home']} - {match_data['goals']['away']}",
-                    win=win
-                )
+                    away_team=away_team_translated
+                ).first()
 
-                # Если найден матч, обновляем его, иначе создаем новый
-                if existing_matches.exists():
-                    match = existing_matches.first()
-                    match.accounted = True if match_date < cutoff_date else False
-                    match.save()
-                    match.Save_time = datetime.now()  # Обновляем время сохранения
-                    match.save()
-                    print(f"Обновлен матч: {match}")
+                if existing_match:
+                    # Обновление данных при необходимости
+                    if existing_match.score != new_score or existing_match.home_team_logo != home_team_logo or existing_match.away_team_logo != away_team_logo:
+                        existing_match.score = new_score
+                        existing_match.win = determine_winner(match_data)
+                        existing_match.Save_time = current_time  # Обновляем время сохранения
+                        existing_match.save()
+                        print(f"Обновлен матч: {existing_match}")
                 else:
+                    # Создание нового матча, если он не найден
                     match = Match.objects.create(
                         league=league,
                         match_date=match_date,
                         home_team=home_team_translated,
-                        home_team_logo=match_data['teams']['home']['logo'],
                         away_team=away_team_translated,
-                        away_team_logo=match_data['teams']['away']['logo'],
-                        score=f"{match_data['goals']['home']} - {match_data['goals']['away']}",
+                        home_team_logo=home_team_logo,
+                        away_team_logo=away_team_logo,
+                        score=new_score,
                         stadium_name=stadium_name_translated,
                         city_name=city_name_translated,
-                        accounted=True if match_date < cutoff_date else False,
-                        win=win
+                        accounted=match_date < cutoff_date,
+                        win=determine_winner(match_data)
                     )
-                    print(f"Создан матч: {match}")
+                    print(f"Создан новый матч: {match}")
     else:
         print(f"Ошибка при подключении к API: {response.status_code}")
+
 
 
 def determine_winner(match_data):
@@ -280,7 +287,7 @@ def Hockey_matches_view(request, id):
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
 
     # Если дата в пределах последних 1 дней или данных в базе нет, или они не учтены, делаем запрос к API
-    if not Hockey_matches.exists() or matches.filter(accounted=False).exists():
+    if not Hockey_matches.exists() or Hockey_matches.filter(accounted=False).exists():
         update_HockeyMatches_from_api(selected_date_obj, league, cutoff_date)
         Hockey_matches = HockeyMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
 
@@ -310,10 +317,15 @@ def determine_winner_Hockey(home_team, away_team, score):
         return 'Неопределено'
 
 def update_HockeyMatches_from_api(date, league, cutoff_date):
-    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
-    if datetime.now() - last_save_time < timedelta(minutes=5):
-        print("Недавно были обновления, не обращаемся к API.")
-        return
+    current_time = timezone.now()
+    try:
+        last_save_time = HockeyMatch.objects.filter(league=league).latest('Save_time').Save_time
+        if current_time - last_save_time < timedelta(minutes=5):
+            print("Недавно были обновления, не обращаемся к API.")
+            return
+    except ObjectDoesNotExist:
+        print("Нет сохраненных матчей в базе данных, обращаемся к API.")
+
     api_url = f"https://v1.hockey.api-sports.io/games?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Hockey)
     if response.status_code == 200:
@@ -322,46 +334,33 @@ def update_HockeyMatches_from_api(date, league, cutoff_date):
             if match_data['league']['name'] == league.name:
                 home_team_translated = translate_text(match_data['teams']['home']['name'])
                 away_team_translated = translate_text(match_data['teams']['away']['name'])
+                match_date = datetime.strptime(match_data['date'], '%Y-%m-%dT%H:%M:%S%z')
+
                 if match_date.hour >= 21:
                     match_date += timedelta(days=1)
-
+                
                 match_date += timedelta(hours=3)  
-                score = f"{match_data['scores']['home']} - {match_data['scores']['away']}"
-                win = determine_winner_Hockey(home_team_translated, away_team_translated, score)
-
-                accounted = match_date < cutoff_date
-
-                defaults = {
-                    'home_team': home_team_translated,
-                    'home_team_logo': match_data['teams']['home']['logo'],
-                    'away_team': away_team_translated,
-                    'away_team_logo': match_data['teams']['away']['logo'],
-                    'score': score,
-                    'first_period': match_data['periods'].get('first'),
-                    'second_period': match_data['periods'].get('second'),
-                    'third_period': match_data['periods'].get('third'),
-                    'overtimes': match_data['periods'].get('overtime'),
-                    'shotouts': match_data['periods'].get('penalties'),
-                    'accounted': accounted,
-                    'win': win
-                }
-
-                existing_matches = HockeyMatch.objects.filter(
+                new_score = f"{match_data['scores']['home']} - {match_data['scores']['away']}"
+                win = determine_winner_Hockey(home_team_translated, away_team_translated, new_score)
+                
+                existing_match = HockeyMatch.objects.filter(
                     league=league,
                     home_team=home_team_translated,
                     away_team=away_team_translated,
-                    match_date=match_date,
-                    score=score,
-                )
+                    match_date=match_date
+                ).first()
 
-                if existing_matches.exists():
-                    match = existing_matches.first()
-                    match.accounted = accounted
-                    match.save()
-                    match.Save_time = datetime.now()  # Обновляем время сохранения
-                    match.save()
-                    print(f"Обновлен матч: {home_team_translated} против {away_team_translated} на {match_date.strftime('%Y-%m-%d')}")
+                if existing_match:
+                    # Обновляем только счет и статус accounted при необходимости
+                    if existing_match.score != new_score:
+                        existing_match.score = new_score
+                        existing_match.accounted = match_date < cutoff_date
+                        existing_match.Save_time = current_time  # Обновляем время сохранения
+                        existing_match.win = win
+                        existing_match.save()
+                        print(f"Обновлен матч: {home_team_translated} против {away_team_translated} на {match_date.strftime('%Y-%m-%d')}")
                 else:
+                    # Создаем новый матч, если он не найден
                     match = HockeyMatch.objects.create(
                         league=league,
                         home_team=home_team_translated,
@@ -369,16 +368,16 @@ def update_HockeyMatches_from_api(date, league, cutoff_date):
                         away_team=away_team_translated,
                         away_team_logo=match_data['teams']['away']['logo'],
                         match_date=match_date,
-                        score=score,
+                        score=new_score,
                         first_period=match_data['periods'].get('first'),
                         second_period=match_data['periods'].get('second'),
                         third_period=match_data['periods'].get('third'),
                         overtimes=match_data['periods'].get('overtime'),
                         shotouts=match_data['periods'].get('penalties'),
-                        accounted=accounted,
+                        accounted=match_date < cutoff_date,
                         win=win
                     )
-                    print(f"Создан матч: {home_team_translated} против {away_team_translated} на {match_date.strftime('%Y-%m-%d')}")
+                    print(f"Создан новый матч: {home_team_translated} против {away_team_translated} на {match_date.strftime('%Y-%m-%d')}")
     else:
         print(f"Ошибка при подключении к API: {response.status_code}")
 def tickets(request):
@@ -496,10 +495,14 @@ def Basket_matches_view(request, id):
 
 
 def update_BasketMatches_from_api(date, league, cutoff_date):
-    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
-    if datetime.now() - last_save_time < timedelta(minutes=5):
-        print("Недавно были обновления, не обращаемся к API.")
-        return
+    current_time = timezone.now()
+    try:
+        last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+        if current_time - last_save_time < timedelta(minutes=5):
+            print("Недавно были обновления, не обращаемся к API.")
+            return
+    except ObjectDoesNotExist:
+        print("Нет сохраненных матчей в базе данных, обращаемся к API.")
     api_url = f"https://v1.basketball.api-sports.io/games?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Basket)
     if response.status_code == 200:
@@ -653,11 +656,14 @@ def Basketmatch_details_view(request, league_id, match_id):
 
 
 def update_matches_for_all_leagues(date, cutoff_date):
-    print('z')
-    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
-    if datetime.now() - last_save_time < timedelta(minutes=5):
-        print("Недавно были обновления, не обращаемся к API.")
-        return
+    current_time = timezone.now()
+    try:
+        last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+        if current_time - last_save_time < timedelta(minutes=5):
+            print("Недавно были обновления, не обращаемся к API.")
+            return
+    except ObjectDoesNotExist:
+        print("Нет сохраненных матчей в базе данных, обращаемся к API.")
     api_url = f"https://v3.football.api-sports.io/fixtures?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Football)
 
@@ -678,27 +684,24 @@ def update_matches_for_all_leagues(date, cutoff_date):
 
                     match_date += timedelta(hours=3)                
                     win = determine_winner(match_data)
+                    new_score = f"{match_data['goals']['home']} - {match_data['goals']['away']}"
 
-                    # Используем filter для поиска матчей с теми же атрибутами
-                    existing_matches = Match.objects.filter(
+                # Поиск существующих матчей без учета счета
+                    existing_match = Match.objects.filter(
                         league=league,
                         match_date=match_date,
                         home_team=home_team_translated,
-                        away_team=away_team_translated,
-                        stadium_name=stadium_name_translated,
-                        city_name=city_name_translated,
-                        score=f"{match_data['goals']['home']} - {match_data['goals']['away']}",
-                        win=win
-                    )
+                        away_team=away_team_translated
+                    ).first()
 
-                    # Если найден матч, обновляем его, иначе создаем новый
-                    if existing_matches.exists():
-                        match = existing_matches.first()
-                        match.accounted = True if match_date < cutoff_date else False
-                        match.save()
-                        match.Save_time = datetime.now()  # Обновляем время сохранения
-                        match.save()
-                        print(f"Обновлен матч: {match}")
+                    if existing_match:
+                        # Обновление данных при необходимости
+                        if existing_match.score != new_score or existing_match.home_team_logo != home_team_logo or existing_match.away_team_logo != away_team_logo:
+                            existing_match.score = new_score
+                            existing_match.win = determine_winner(match_data)
+                            existing_match.Save_time = current_time  # Обновляем время сохранения
+                            existing_match.save()
+                            print(f"Обновлен матч: {existing_match}")
                     else:
                         match = Match.objects.create(
                             league=league,
@@ -720,10 +723,14 @@ def update_matches_for_all_leagues(date, cutoff_date):
 
 
 def update_HockeyMatches_from_all_leagues(date,cutoff_date):
-    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
-    if datetime.now() - last_save_time < timedelta(minutes=5):
-        print("Недавно были обновления, не обращаемся к API.")
-        return
+    current_time = timezone.now()
+    try:
+        last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+        if current_time - last_save_time < timedelta(minutes=5):
+            print("Недавно были обновления, не обращаемся к API.")
+            return
+    except ObjectDoesNotExist:
+        print("Нет сохраненных матчей в базе данных, обращаемся к API.")
     api_url = f"https://v1.hockey.api-sports.io/games?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Hockey)
     if response.status_code == 200:
@@ -795,10 +802,14 @@ def update_HockeyMatches_from_all_leagues(date,cutoff_date):
 
 
 def update_BasketMatches_from_api(date,cutoff_date):
-    last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
-    if datetime.now() - last_save_time < timedelta(minutes=5):
-        print("Недавно были обновления, не обращаемся к API.")
-        return
+    current_time = timezone.now()
+    try:
+        last_save_time = Match.objects.filter(league=league).latest('Save_time').Save_time
+        if current_time - last_save_time < timedelta(minutes=5):
+            print("Недавно были обновления, не обращаемся к API.")
+            return
+    except ObjectDoesNotExist:
+        print("Нет сохраненных матчей в базе данных, обращаемся к API.")
     api_url = f"https://v1.basketball.api-sports.io/games?date={date.strftime('%Y-%m-%d')}"
     response = requests.get(api_url, headers=API_HEADERS_Basket)
     if response.status_code == 200:
@@ -870,35 +881,39 @@ def update_BasketMatches_from_api(date,cutoff_date):
     else:
         print(f"Ошибка при подключении к API: {response.status_code}")
 
+
 def edit_league_details(request, league_id):
     league = get_object_or_404(FootballLiga, pk=league_id)
-    
+    selected_date = request.GET.get('matchDate')  # Get the date from GET request
+
     if request.method == 'POST':
-        # Обновление результатов матчей
+        # Handling form submission
         matches = Match.objects.filter(league=league)
         for match in matches:
-            match_score = request.POST.get(f'score_{match.id}', None)
-            if match_score:
-                match.score = match_score
-                match.accounted = True  # предположим, что матч теперь учтен
-                match.save()
+            match.score = request.POST.get(f'score_{match.id}', match.score)
+            match.Home_goals = request.POST.get(f'home_goals_{match.id}', match.Home_goals)
+            match.Away_goals = request.POST.get(f'away_goals_{match.id}', match.Away_goals)
+            match.time_Hgoals = int(request.POST.get(f'time_Hgoals_{match.id}', 0))
+            match.time_Agoals = int(request.POST.get(f'time_Agoals_{match.id}', 0))
+            match.save()
 
-        # Обновление очков в турнирной таблице
         teams = LeagueScore.objects.filter(league=league)
         for team in teams:
-            team_points = request.POST.get(f'points_{team.id}', None)
-            if team_points:
-                team.points = int(team_points)
-                team.save()
+            team.points = int(request.POST.get(f'points_{team.id}', team.points))
+            team.save()
 
-        # Перенаправляем на ту же страницу для отображения обновлённых данных
-        return redirect('edit.html', league_id=league_id)
+        return redirect(f'edit?league_id={league_id}&matchDate={selected_date}')  # Redirect to keep the filter
 
     else:
-        matches = Match.objects.filter(league=league)
+        if selected_date:
+            matches = Match.objects.filter(league=league, match_date__date=datetime.strptime(selected_date, '%Y-%m-%d'))
+        else:
+            matches = Match.objects.filter(league=league)
         teams = LeagueScore.objects.filter(league=league).order_by('-points')
+
         return render(request, 'edit.html', {
             'league': league,
             'matches': matches,
-            'teams': teams
+            'teams': teams,
+            'selected_date': selected_date or ""  # Pass back to template to maintain state
         })

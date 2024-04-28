@@ -30,7 +30,11 @@ class Match(models.Model):
     city_name = models.CharField(max_length=255, blank=True, null=True)
     accounted = models.BooleanField(default=False)
     win = models.CharField(max_length=255, blank=True, null=True)
-    Save_time = models.DateTimeField(auto_now=True)  # Если время матча тоже важно
+    Save_time = models.DateTimeField(auto_now=True)
+    Home_goals = models.CharField(max_length=255)
+    Away_goals = models.CharField(max_length=255)
+    time_Hgoals = models.IntegerField(default=0)
+    time_Agoals = models.IntegerField(default=0)
 
 
     class Meta:
@@ -86,6 +90,8 @@ class HockeyMatch(models.Model):
     shotouts = models.CharField(max_length=10, blank=True, null=True) 
     accounted = models.BooleanField(default=False)
     win = models.CharField(max_length=255, blank=True, null=True)
+    Save_time = models.DateTimeField(auto_now=True)
+
     class Meta:
         db_table = 'Hockey_matches'  # Указываем явное имя таблицы
         verbose_name = 'Hockey_Match'
@@ -187,35 +193,3 @@ class BasketMatch(models.Model):
         return f"{self.home_team} vs {self.away_team} on {self.match_date.strftime('%Y-%m-%d')}"
 
 
-def edit_league_details(request, league_id):
-    league = get_object_or_404(FootballLiga, pk=league_id)
-    
-    if request.method == 'POST':
-        # Обновление результатов матчей
-        matches = Match.objects.filter(league=league)
-        for match in matches:
-            match_score = request.POST.get(f'score_{match.id}', None)
-            if match_score:
-                match.score = match_score
-                match.accounted = True  # предположим, что матч теперь учтен
-                match.save()
-
-        # Обновление очков в турнирной таблице
-        teams = LeagueScore.objects.filter(league=league)
-        for team in teams:
-            team_points = request.POST.get(f'points_{team.id}', None)
-            if team_points:
-                team.points = int(team_points)
-                team.save()
-
-        # Перенаправляем на ту же страницу для отображения обновлённых данных
-        return redirect('edit_league_details', league_id=league_id)
-
-    else:
-        matches = Match.objects.filter(league=league)
-        teams = LeagueScore.objects.filter(league=league).order_by('-points')
-        return render(request, 'edit_league_details.html', {
-            'league': league,
-            'matches': matches,
-            'teams': teams
-        })
