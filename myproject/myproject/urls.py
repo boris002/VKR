@@ -19,6 +19,8 @@ from .views.views import main_page, matches_view, football_view, match_details_v
 from .views.auth_views import CustomLoginView, CustomLogoutView, RegisterView, profile_view
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
+from django.conf.urls.static import static
+from django.conf import settings
 
 urlpatterns = [
 
@@ -43,4 +45,4 @@ urlpatterns = [
     path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
     path('edit/<int:league_id>/', edit_league_details, name = 'edit')
 
-]
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

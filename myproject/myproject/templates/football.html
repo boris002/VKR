@@ -1,12 +1,14 @@
 <!-- templates/football.html -->
-{% extends 'base.html' %}
 
+
+{% extends 'base.html' %}
+{% load static %}
 {% block content %}
 {% block extra_styles %}
 <style>
     /* Устанавливаем фон для всего тела документа */
     body {
-        background-image: url('https://w.forfun.com/fetch/13/1375ca109b1c221b1dada43ecb2f4b8f.jpeg'); /* Укажите путь к вашему изображению */
+        background-image: url('{% static "/img/football.jpg" %}');
         background-size: cover; /* Заставляет изображение полностью покрывать страницу */
         background-position: center; /* Центрирует изображение на странице */
         background-repeat: no-repeat; /* Предотвращает повторение изображения */

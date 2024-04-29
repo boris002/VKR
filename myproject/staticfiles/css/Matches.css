@@ -1,0 +1,31 @@
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+}
+
+.match-card-link .match-card {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+    transition: transform .2s;
+}
+
+.match-card-link .match-card:hover {
+    transform: scale(1.05);
+}
+
+.content-switcher {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.content-block {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-top: 5px;
+}

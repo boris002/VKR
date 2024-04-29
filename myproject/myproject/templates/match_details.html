@@ -1,5 +1,15 @@
 {% extends 'base.html' %}
-
+{% block extra_styles %}
+<style>
+    /* Устанавливаем фон для всего тела документа */
+    body {
+        background-image: url('{% static "img/football.jpg" %}');
+        background-size: cover; /* Заставляет изображение полностью покрывать страницу */
+        background-position: center; /* Центрирует изображение на странице */
+        background-repeat: no-repeat; /* Предотвращает повторение изображения */
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="container mt-4">
     <div class="card">
