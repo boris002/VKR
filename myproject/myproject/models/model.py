@@ -1,19 +1,31 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class TypeLeague(models.Model):
+    id = models.AutoField(primary_key=True)
+    type = models.CharField(max_length=255, db_column='Type')  # Указание имени колонки, если оно отличается от имени поля
+
+    class Meta:
+        db_table = 'type_league'  # Указание Django использовать конкретное имя таблицы
+        verbose_name = 'Type of League'
+        verbose_name_plural = 'Types of Leagues'
+
+    def __str__(self):
+        return self.type
+
 class FootballLiga(models.Model):
     idFootball_liga = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
     country = models.CharField(max_length=255)
+    type = models.ForeignKey(TypeLeague, on_delete=models.CASCADE, null=True, blank=True, db_column='type_id')  # Добавление внешнего ключа
 
     class Meta:
-        db_table = 'football_liga'  # Указание Django использовать конкретное имя таблицы
+        db_table = 'football_liga'
         verbose_name = 'Football Liga'
         verbose_name_plural = 'Football Ligas'
 
     def __str__(self):
         return self.name
-
 
 class Match(models.Model):
     id = models.AutoField(primary_key=True)

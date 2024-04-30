@@ -106,7 +106,7 @@ def matches_view(request, id):
 def update_matches_from_api(date, league, cutoff_date):
     current_time = timezone.now()
     matches_for_date = Match.objects.filter(league=league, match_date__date=date)
-    accounted_flag = matches_for_date.filter(accounted=0).exists()
+    #accounted_flag = matches_for_date.filter(accounted=0).exists()
         
     try:
         last_save_time = matches_for_date.latest('Save_time').Save_time
@@ -118,7 +118,8 @@ def update_matches_from_api(date, league, cutoff_date):
         # 1. Нет сохраненных матчей в базе данных для данной лиги и даты.
         # 2. Хотя бы один матч с учетом заданной даты имеет accounted = 0.
         # 3. Последнее сохранение было более 5 минут назад или не было вовсе.
-    if not matches_for_date or accounted_flag or time_since_last_save is None or time_since_last_save > timedelta(minutes=5):
+        #or accounted_flag
+    if not matches_for_date or time_since_last_save is None or time_since_last_save > timedelta(minutes=5):
         print(f"Обращаемся к API для лиги {league.name} на дату {date}")
             # Здесь код для запроса к API и обновления данных...
     else:
@@ -237,18 +238,26 @@ def match_details_view(request, league_id, match_id):
     })
 
 def football_view(request):
-    football_ligas = FootballLiga.objects.all().order_by('name')
+    # Получаем лиги по типам
+    leagues = FootballLiga.objects.filter(type__id=1).order_by('name')
+    cups = FootballLiga.objects.filter(type__id=3).order_by('name')
+    euro_cups = FootballLiga.objects.filter(type__id=2).order_by('name')
+
     today = timezone.now().date()
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
     yesterday = today - timedelta(days=1)
-    
-    # Запускаем выполнение функции update_matches_for_all_leagues в отдельном потоке для сегодняшнего и вчерашнего дней
+
+    # Запуск потоков
     thread_today = Thread(target=update_matches_for_all_leagues, args=(today, cutoff_date))
     thread_yesterday = Thread(target=update_matches_for_all_leagues, args=(yesterday, cutoff_date))
     thread_today.start()
     thread_yesterday.start()
-    
-    return render(request, 'football.html', {'football_ligas': football_ligas})
+
+    return render(request, 'football.html', {
+        'leagues': leagues,
+        'euro_cups': euro_cups,
+        'cups': cups
+    })
 def Hockey_view(request):
     Hockey_leagues = HockeyLeague.objects.all().order_by('name')
     return render(request, 'Hockey.html', {'Hockey_leagues': Hockey_leagues})
@@ -680,7 +689,7 @@ def update_matches_for_all_leagues(date, cutoff_date):
     
     for league in FootballLiga.objects.all():
         matches_for_date = Match.objects.filter(league=league, match_date__date=date)
-        accounted_flag = matches_for_date.filter(accounted=0).exists()
+        #accounted_flag = matches_for_date.filter(accounted=0).exists()
         
         try:
             last_save_time = matches_for_date.latest('Save_time').Save_time
@@ -691,8 +700,8 @@ def update_matches_for_all_leagues(date, cutoff_date):
         # Условия для обновления:
         # 1. Нет сохраненных матчей в базе данных для данной лиги и даты.
         # 2. Хотя бы один матч с учетом заданной даты имеет accounted = 0.
-        # 3. Последнее сохранение было более 5 минут назад или не было вовсе.
-        if not matches_for_date or accounted_flag or time_since_last_save is None or time_since_last_save > timedelta(minutes=5):
+        # 3. Последнее сохранение было более 5 минут назад или не было вовсе.accounted_flag
+        if not matches_for_date or  time_since_last_save is None or time_since_last_save > timedelta(minutes=5):
             print(f"Обращаемся к API для лиги {league.name} на дату {date}")
             # Здесь код для запроса к API и обновления данных...
         else:
