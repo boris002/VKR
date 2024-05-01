@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django import forms
 
 class TypeLeague(models.Model):
     id = models.AutoField(primary_key=True)
@@ -205,3 +206,36 @@ class BasketMatch(models.Model):
         return f"{self.home_team} vs {self.away_team} on {self.match_date.strftime('%Y-%m-%d')}"
 
 
+class News(models.Model):
+    country = models.CharField(max_length=255, null=True, blank=True)
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    image = models.ImageField(upload_to='news_images/', null=True, blank=True)
+    type = models.ForeignKey('TypeSport', on_delete=models.CASCADE, null=True, db_column='type_id')
+    main = models.BooleanField(default=False)
+    Date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'news'
+        verbose_name = 'News'
+        verbose_name_plural = 'News'
+
+    def __str__(self):
+        return self.title
+
+class TypeSport(models.Model):
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'type_sport'
+        verbose_name = 'Type of Sport'
+        verbose_name_plural = 'Types of Sports'
+
+    def __str__(self):
+        return self.name
+
+
+class NewsForm(forms.ModelForm):
+    class Meta:
+        model = News
+        fields = ['country', 'title', 'content', 'image', 'type', 'main']

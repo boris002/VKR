@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet  # Импортируйте модель, соответствующую таблице Matches
+from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet, News, TypeSport, NewsForm # Импортируйте модель, соответствующую таблице Matches
 from myproject.api_settings import API_HEADERS_Football, API_HEADERS_Hockey, API_HEADERS_Basket
 import json
 from django.utils import timezone
@@ -960,3 +960,18 @@ def edit_league_details(request, league_id):
             'teams': teams,
             'selected_date': selected_date or ""  # Pass back to template to maintain state
         })
+
+def news_view(request):
+    news_list = News.objects.all().order_by('-Date')  # Получаем все новости, отсортированные по дате
+    return render(request, 'news.html', {'news_list': news_list})
+def create_news(request):
+    if request.method == 'POST':
+        form = NewsForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('news')  # Перенаправление на список новостей после создания
+    else:
+        form = NewsForm()
+    return render(request, 'create_news.html', {'form': form})
+
+

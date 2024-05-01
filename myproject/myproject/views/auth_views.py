@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django import template
 
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -76,3 +77,9 @@ def profile_view(request):
         return redirect('profile')  # Укажите здесь имя URL-адреса вашего профиля
 
     return render(request, 'profile.html', {'user': request.user})
+
+
+register = template.Library()
+@register.filter(name='has_group')
+def has_group(user, group_name):
+    return Group.objects.get(name=group_name).user_set.filter(id=user.id).exists()
