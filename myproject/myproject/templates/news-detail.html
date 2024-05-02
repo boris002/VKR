@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_styles %}
+<style>
+    .news-image {
+        display: block;
+        max-width: 40%; /* Уменьшаем ширину изображения */
+        height: auto;
+        margin: 20px auto; /* Центрируем изображение */
+    }
+    .news-content {
+        text-align: center; /* Выравнивание текста по ширине для лучшей читаемости */
+        margin-top: 20px; /* Добавляем отступ сверху для текста */
+    }
+    .news-detail h1 {
+        text-align: center; /* Центрирование заголовка */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="news-detail">
+         <h1>{{ news.title }}</h1>{% if news.image %}
+            <img src="{{ news.image.url }}" alt="{{ news.title }}" class="news-image">
+        {% endif %}
+        <div class="news-content">
+           
+            {{ news.content }}
+        </div>
+    </div>
+</div>
+{% endblock %}

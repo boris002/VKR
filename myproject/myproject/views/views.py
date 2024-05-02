@@ -55,6 +55,17 @@ def main_page(request):
     context = {
         'football_matches': football_matches,
     }
+
+
+    today = timezone.now().date()
+    cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
+    yesterday = today - timedelta(days=1)
+
+    # Запуск потоков
+    thread_today = Thread(target=update_matches_for_all_leagues, args=(today, cutoff_date))
+    thread_yesterday = Thread(target=update_matches_for_all_leagues, args=(yesterday, cutoff_date))
+    thread_today.start()
+    thread_yesterday.start()
     return render(request, 'main.html', context)
 
 @csrf_exempt
@@ -238,26 +249,21 @@ def match_details_view(request, league_id, match_id):
     })
 
 def football_view(request):
-    # Получаем лиги по типам
+    # Предполагаем, что у футбола в TypeSport id = 1 или можно найти точное название 'football'
+    football_type = TypeSport.objects.get(name='football')  # Ищем тип "football"
+    football_news = News.objects.filter(type=football_type).order_by('-Date')[:10]  # Получаем последние 10 новостей по футболу
+
     leagues = FootballLiga.objects.filter(type__id=1).order_by('name')
     cups = FootballLiga.objects.filter(type__id=3).order_by('name')
     euro_cups = FootballLiga.objects.filter(type__id=2).order_by('name')
 
-    today = timezone.now().date()
-    cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
-    yesterday = today - timedelta(days=1)
-
-    # Запуск потоков
-    thread_today = Thread(target=update_matches_for_all_leagues, args=(today, cutoff_date))
-    thread_yesterday = Thread(target=update_matches_for_all_leagues, args=(yesterday, cutoff_date))
-    thread_today.start()
-    thread_yesterday.start()
-
     return render(request, 'football.html', {
         'leagues': leagues,
         'euro_cups': euro_cups,
-        'cups': cups
+        'cups': cups,
+        'football_news': football_news  # Добавляем новости в контекст
     })
+
 def Hockey_view(request):
     Hockey_leagues = HockeyLeague.objects.all().order_by('name')
     return render(request, 'Hockey.html', {'Hockey_leagues': Hockey_leagues})
@@ -964,6 +970,8 @@ def edit_league_details(request, league_id):
 def news_view(request):
     news_list = News.objects.all().order_by('-Date')  # Получаем все новости, отсортированные по дате
     return render(request, 'news.html', {'news_list': news_list})
+
+
 def create_news(request):
     if request.method == 'POST':
         form = NewsForm(request.POST, request.FILES)
@@ -975,3 +983,18 @@ def create_news(request):
     return render(request, 'create_news.html', {'form': form})
 
 
+def news_detail_view(request, news_id):
+    # Получаем одну новость по ID
+    news = get_object_or_404(News, id=news_id)
+    return render(request, 'news-detail.html', {'news': news})
+
+def edit_news(request, news_id):
+    news = get_object_or_404(News, id=news_id)
+    if request.method == 'POST':
+        form = NewsForm(request.POST, request.FILES, instance=news)
+        if form.is_valid():
+            form.save()
+            return redirect('news')  # Вернуть пользователя к списку новостей после сохранения изменений
+    else:
+        form = NewsForm(instance=news)
+    return render(request, 'edit_news.html', {'form': form})

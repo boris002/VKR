@@ -24,6 +24,7 @@
     }
 </style>
 {% endblock %}
+
 <div class="container mt-3">
     <div class="row">
         <!-- Блок с выбором лиги -->
@@ -58,8 +59,20 @@
         <div class="col-md-6">
             <div class="news-section">
                 <h2 class="text-black">Футбольные новости</h2>
-                <!-- Здесь можно добавить динамические новости, например, через API или базу данных -->
-                <p>Здесь будут отображаться актуальные новости из мира футбола.</p>
+                {% if football_news %}
+                    {% for news in football_news %}
+                        <div class="news-item">
+                            <h4>{{ news.title }}</h4>
+                            {% if news.image %}
+                                <img src="{{ news.image.url }}" alt="{{ news.title }}" style="width:100%; max-height:200px; object-fit:cover;">
+                            {% endif %}
+                            <p>{{ news.content|truncatewords:30 }}</p>
+                            <a href="{% url 'news_detail' news.id %}" class="btn btn-secondary">Подробнее</a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Нет доступных футбольных новостей.</p>
+                {% endif %}
             </div>
         </div>
     </div>
