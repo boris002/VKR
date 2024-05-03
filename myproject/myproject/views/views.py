@@ -51,9 +51,17 @@ def main_page(request):
         league__in=FootballLiga.objects.all(),  # Фильтруем только по футбольным лигам
         match_date__date__in=[yesterday, today]  # Фильтруем по датам
     ).order_by('-match_date')[:5]  # Получаем до 5 матчей и сортируем по дате в обратном порядке
+    main_news = News.objects.filter(main=True).order_by('-Date')[:3]  # 3 последние главные новости
+    main_news_ids = [news.id for news in main_news]  # Получаем ID главных новостей в Python
 
+    if main_news_ids:
+        other_news = News.objects.exclude(id__in=main_news_ids).order_by('-Date')  # Исключаем эти ID из других новостей
+    else:
+        other_news = News.objects.all().order_by('-Date') 
     context = {
         'football_matches': football_matches,
+        'main_news': main_news,
+        'other_news': other_news
     }
 
 
