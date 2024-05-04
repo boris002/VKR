@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views.views import main_page, matches_view, football_view, match_details_view,Hockey_matches_view, Hockey_view, tickets,buy_ticket, Basket_view, Basket_matches_view,Hockeymatch_details_view,Basketmatch_details_view, edit_league_details,create_news, news_view, news_detail_view,edit_news, delete_news
+from .views.views import main_page, matches_view, football_view, match_details_view,Hockey_matches_view, Hockey_view, tickets,buy_ticket, Basket_view, Basket_matches_view,Hockeymatch_details_view,Basketmatch_details_view, edit_league_details,create_news, news_view, news_detail_view,edit_news, delete_news, create_or_edit_ticket, delete_ticket
 from .views.auth_views import CustomLoginView, CustomLogoutView, RegisterView, profile_view
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
@@ -49,6 +49,9 @@ urlpatterns = [
     path('news/<int:news_id>/', news_detail_view, name='news_detail'),
     path('news/<int:news_id>/edit/', edit_news, name='edit_news'),
     path('news/delete/<int:news_id>/', delete_news, name='delete_news'),
+    path('tickets/new/<str:sport_type>/', create_or_edit_ticket, name='create_ticket'),
+    path('tickets/edit/<int:ticket_id>/<str:sport_type>/', create_or_edit_ticket, name='edit_ticket'),
+    path('tickets/delete/<int:ticket_id>/<str:sport_type>/', delete_ticket, name='delete_ticket'),
 
 
 

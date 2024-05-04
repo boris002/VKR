@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet, News, TypeSport, NewsForm # Импортируйте модель, соответствующую таблице Matches
+from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet, News, TypeSport, NewsForm, FootballTicketPurchase, HockeyTicketPurchase # Импортируйте модель, соответствующую таблице Matches
 from myproject.api_settings import API_HEADERS_Football, API_HEADERS_Hockey, API_HEADERS_Basket
 import json
 from django.utils import timezone
@@ -17,6 +17,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from threading import Thread
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
@@ -447,71 +448,57 @@ def tickets(request):
     ticket_types = TicketsType.objects.all()
     return render(request, 'tickets.html', {'football_matches': football_matches, 'hockey_matches': hockey_matches, 'ticket_types': ticket_types})
 
+@transaction.atomic
 def buy_ticket(request):
     if request.method == 'POST':
         match_id = request.POST.get('match_id')
         quantity = int(request.POST.get('quantity'))
         payment_method = request.POST.get('payment_method')
-        
-        # Получаем информацию о матче
-        try:
-            football_match = TicketsFootball.objects.get(id=match_id)
-        except TicketsFootball.DoesNotExist:
-            football_match = None
 
-        try:
-            hockey_match = TicketsHockey.objects.get(id=match_id)
-        except TicketsHockey.DoesNotExist:
-            hockey_match = None
+        # Fetch the match information
+        football_match = TicketsFootball.objects.filter(id=match_id).first()
+        hockey_match = TicketsHockey.objects.filter(id=match_id).first()
 
         if football_match:
             ticket = football_match
         elif hockey_match:
             ticket = hockey_match
         else:
-            # Если матч не найден, выводим сообщение об ошибке
             messages.error(request, 'Матч не найден')
             return redirect('tickets')
 
-        # Проверяем, есть ли у пользователя кошелек
-        try:
-            wallet = Wallet.objects.get(user=request.user)
-        except Wallet.DoesNotExist:
-            # Если у пользователя нет кошелька, создаем его со стандартным балансом
-            wallet = Wallet.objects.create(user=request.user)
+        # Check for user's wallet
+        wallet, created = Wallet.objects.get_or_create(user=request.user, defaults={'balance': 0})
 
-        # Проверяем, достаточно ли у пользователя средств для покупки билетов
+        # Check if user has enough funds for the purchase
         total_price = ticket.price * quantity
-        if payment_method == 'wallet':
-            if wallet.balance >= total_price:
-                # Списываем сумму с кошелька и сохраняем новый баланс
-                wallet.balance -= total_price
-                wallet.save()
-
-                # Уменьшаем количество доступных билетов
-                ticket.quantity -= quantity
-                ticket.save()
-
-                # Здесь можете выполнить другие действия, например, создать запись о покупке билета в базе данных
-
-                messages.success(request, 'Билеты успешно куплены')
-            else:
-                # Если у пользователя недостаточно средств, выводим сообщение об ошибке
-                messages.error(request, 'Недостаточно средств на кошельке')
-                return redirect('tickets')
-        elif payment_method == 'card':
-            # Здесь можете добавить обработку платежа с помощью карты
-            # Предполагается, что здесь будет вызов соответствующего метода для оплаты с карты
-            messages.success(request, 'Оплата с карты успешно произведена')
-            # Уменьшаем количество доступных билетов
-            ticket.quantity -= quantity
-            ticket.save()
-            # Здесь можете выполнить другие действия, например, создать запись о покупке билета в базе данных
+        if wallet.balance < total_price and payment_method == 'wallet':
+            messages.error(request, 'Недостаточно средств на кошельке')
             return redirect('tickets')
+
+        # Process payment based on the chosen method
+        if payment_method == 'wallet':
+            wallet.balance -= total_price
+            wallet.save()
+        elif payment_method == 'card':
+            # Placeholder for card payment processing
+            pass
         else:
-            # Если не выбран ни один метод оплаты, выводим сообщение об ошибке
             messages.error(request, 'Выберите метод оплаты')
             return redirect('tickets')
+
+        # Reduce the number of available tickets
+        ticket.quantity -= quantity
+        ticket.save()
+
+        # Create ticket purchase record
+        if football_match:
+            FootballTicketPurchase.objects.create(user=request.user, ticket=football_match)
+        elif hockey_match:
+            HockeyTicketPurchase.objects.create(user=request.user, ticket=hockey_match)
+
+        messages.success(request, 'Билеты успешно куплены')
+        return redirect('tickets')
 
     return redirect('tickets')
 
@@ -1025,3 +1012,53 @@ def delete_news(request, news_id):
     else:
         # Handle GET request (if any)
         pass
+
+
+
+
+def create_or_edit_ticket(request, ticket_id=None, sport_type='football'):
+    TicketModel = TicketsFootball if sport_type == 'football' else TicketsHockey
+
+    if ticket_id:
+        ticket = get_object_or_404(TicketModel, pk=ticket_id)
+    else:
+        ticket = TicketModel()  # Creating a new instance
+
+    if request.method == 'POST':
+        match_id = request.POST.get('id_matches')
+        type_id = request.POST.get('id_type')
+
+        if match_id:
+            match = get_object_or_404(Match, pk=match_id)
+            ticket.id_matches = match
+            ticket.idFootball_liga = match.league  # Установите лигу напрямую из матча
+
+        if type_id:
+            ticket_type = get_object_or_404(TicketsType, pk=type_id)
+            ticket.id_type = ticket_type
+
+        ticket.quantity = request.POST.get('quantity')
+        ticket.price = request.POST.get('price')
+
+        if ticket.quantity and ticket.price:
+            ticket.save()
+            messages.success(request, 'Билет успешно сохранён.')
+            return redirect('tickets')
+        else:
+            messages.error(request, 'Ошибка сохранения билета. Пожалуйста, проверьте введённые данные.')
+
+    context = {
+        'ticket': ticket,
+        'matches': Match.objects.all(),
+        'ticket_types': TicketsType.objects.all(),  # Добавьте это в контекст
+        'sport_type': sport_type
+    }
+    return render(request, 'create_or_edit_ticket.html', context)
+
+
+def delete_ticket(request, ticket_id, sport_type='football'):
+    TicketModel = TicketsFootball if sport_type == 'football' else TicketsHockey
+    ticket = get_object_or_404(TicketModel, pk=ticket_id)
+    ticket.delete()
+    messages.success(request, 'Ticket deleted successfully.')
+    return redirect('tickets')

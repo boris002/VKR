@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django import forms
+from django.conf import settings
 
 class TypeLeague(models.Model):
     id = models.AutoField(primary_key=True)
@@ -155,7 +156,29 @@ class TicketsHockey(models.Model):
     def __str__(self):
         return f"{self.idHockey_league} - {self.id_matches}"
 
+class FootballTicketPurchase(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    ticket = models.ForeignKey(TicketsFootball, on_delete=models.CASCADE)
 
+    class Meta:
+        db_table = 'football_ticket_purchases'
+        verbose_name = "Football Ticket Purchase"
+        verbose_name_plural = "Football Ticket Purchases"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.ticket}"
+
+class HockeyTicketPurchase(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    ticket = models.ForeignKey(TicketsHockey, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'hockey_ticket_purchases'
+        verbose_name = "Hockey Ticket Purchase"
+        verbose_name_plural = "Hockey Ticket Purchases"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.ticket}"
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)

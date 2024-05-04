@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>{% if ticket.id %}Редактирование билета - {{ ticket.id }}{% else %}Создание нового билета{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_matches">Матч:</label>
+            <select name="id_matches" id="id_matches" class="form-control" {% if ticket.id %}disabled{% endif %}>
+                {% for match in matches %}
+                <option value="{{ match.id }}" {% if ticket.id_matches_id == match.id %}selected{% endif %}>
+                    {{ match.home_team }} vs {{ match.away_team }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="id_type">Тип билета:</label>
+            <select name="id_type" id="id_type" class="form-control">
+                {% for type in ticket_types %}
+                <option value="{{ type.id }}" {% if ticket.id_type_id == type.id %}selected{% endif %}>
+                    {{ type.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="quantity">Количество:</label>
+            <input type="number" name="quantity" id="quantity" class="form-control" value="{{ ticket.quantity|default_if_none:'' }}">
+        </div>
+        <div class="form-group">
+            <label for="price">Цена:</label>
+            <input type="text" name="price" id="price" class="form-control" value="{{ ticket.price|default_if_none:'' }}">
+        </div>
+        <button type="submit" class="btn btn-success">Сохранить билет</button>
+    </form>
+</div>
+{% endblock %}

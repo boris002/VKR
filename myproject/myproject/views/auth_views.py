@@ -11,8 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django import template
-
+from myproject.models.model import FootballTicketPurchase, HockeyTicketPurchase, Match, HockeyMatch
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
@@ -67,19 +66,19 @@ class CustomLogoutView(LogoutView):
 
 def profile_view(request):
     if request.method == 'POST':
-        # Здесь логика обновления информации пользователя
         user = request.user
-        user.first_name = request.POST.get('first_name')
-        user.last_name = request.POST.get('last_name')
-        user.email = request.POST.get('email')
+        user.first_name = request.POST.get('first_name', '')
+        user.last_name = request.POST.get('last_name', '')
+        user.email = request.POST.get('email', '')
         user.save()
         messages.success(request, 'Профиль успешно обновлен.')
-        return redirect('profile')  # Укажите здесь имя URL-адреса вашего профиля
+        return redirect('profile')
 
-    return render(request, 'profile.html', {'user': request.user})
+    football_tickets = FootballTicketPurchase.objects.filter(user=request.user).select_related('ticket', 'ticket__id_matches').all()
+    hockey_tickets = HockeyTicketPurchase.objects.filter(user=request.user).select_related('ticket', 'ticket__id_matches').all()
 
-
-register = template.Library()
-@register.filter(name='has_group')
-def has_group(user, group_name):
-    return Group.objects.get(name=group_name).user_set.filter(id=user.id).exists()
+    return render(request, 'profile.html', {
+        'user': request.user,
+        'football_tickets': football_tickets,
+        'hockey_tickets': hockey_tickets
+    })

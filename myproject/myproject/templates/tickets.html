@@ -1,10 +1,14 @@
 {% extends 'base.html' %}
+{% load templatehelpers %}
 
 {% block content %}
 <div class="container">
     <div class="row">
         <div class="col-md-6">
             <h1>Футбольные матчи</h1>
+            {% if request.user.is_staff or request.user|has_group:"journalist" %}
+            <a href="{% url 'create_ticket' 'football' %}" class="btn btn-success">Создать билет</a>
+            {% endif %}
             {% for match in football_matches %}
             <div class="card mb-3">
                 <div class="card-body">
@@ -28,19 +32,20 @@
                             </select>
                         </div>
                         <button type="submit" class="btn btn-primary">Купить</button>
+                        {% if request.user.is_staff or request.user|has_group:"journalist" %}
+                        <a href="{% url 'edit_ticket' match.id 'football' %}" class="btn btn-info">Редактировать</a>
+                        <a href="{% url 'delete_ticket' match.id 'football' %}" class="btn btn-danger" onclick="return confirm('Are you sure?')">Удалить</a>
+                        {% endif %}
                     </form>
-                    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }}">
-        {{ message }}
-    </div>
-{% endfor %}
-
                 </div>
             </div>
             {% endfor %}
         </div>
         <div class="col-md-6">
             <h1>Хоккейные матчи</h1>
+            {% if request.user.is_staff or request.user|has_group:"journalist" %}
+            <a href="{% url 'create_ticket' 'hockey' %}" class="btn btn-success">Создать билет</a>
+            {% endif %}
             {% for match in hockey_matches %}
             <div class="card mb-3">
                 <div class="card-body">
@@ -64,6 +69,10 @@
                             </select>
                         </div>
                         <button type="submit" class="btn btn-primary">Купить</button>
+                        {% if request.user.is_staff or request.user|has_group:"journalist" %}
+                        <a href="{% url 'edit_ticket' match.id 'hockey' %}" class="btn btn-info">Редактировать</a>
+                        <a href="{% url 'delete_ticket' match.id 'hockey' %}" class="btn btn-danger" onclick="return confirm('Are you sure?')">Удалить</a>
+                        {% endif %}
                     </form>
                 </div>
             </div>
@@ -72,4 +81,3 @@
     </div>
 </div>
 {% endblock %}
-
