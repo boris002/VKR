@@ -34,6 +34,7 @@
                         <a href="{% url 'news_detail' news.id %}" class="btn btn-secondary">Подробнее</a>
                         {% if request.user.is_staff or request.user|has_group:"journalist" %}
                         <a href="{% url 'edit_news' news.id %}" class="btn btn-primary">Редактировать</a>
+                        <a href="{% url 'delete_news' news.id %}" class="btn btn-danger">Удалить</a>
                     {% endif %}
                     </div>
                 </div>
