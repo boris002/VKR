@@ -197,6 +197,8 @@ class BasketMatch(models.Model):
     overtimes = models.CharField(max_length=10, blank=True, null=True) 
     accounted = models.BooleanField(default=False)
     win = models.CharField(max_length=255, blank=True, null=True)
+    Save_time = models.DateTimeField(auto_now=True)
+
     class Meta:
         db_table = 'Basket_matches'  # Указываем явное имя таблицы
         verbose_name = 'Basket_Match'

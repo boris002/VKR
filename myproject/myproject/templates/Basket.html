@@ -1,15 +1,36 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block content %}
+{% block extra_styles %}
+<style>
+    body {
+        background-color: aliceblue;
+        background-position: center;
+    }
+    .liga-button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .news-section {
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.8); /* Легкая белая подложка для улучшения читаемости */
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+</style>
+{% endblock %}
 <div class="container mt-3">
     <div class="row">
         <!-- Блок с выбором лиги -->
         <div class="col-md-6">
-            <h2 class="text-white">Выберите лигу</h2>
+            <h2 class="text-Black">Выберите лигу</h2>
             {% for liga in Basket_leagues %}
             <div class="mb-2">
                 <!-- Обратите внимание на исправленный URL-маршрут 'Matches' -->
-                <a href="{% url 'Basket_Matches' liga.id %}" class="btn btn-primary btn-block">
+                <a href="{% url 'Basket_Matches' liga.id %}" class="btn btn-primary liga-button">
                     <div>
                         <span>{{ liga.name }}</span></span>
                     </div>
@@ -20,7 +41,23 @@
 
         <!-- Блок с новостями о футболе (здесь может быть ваш код для новостей) -->
         <div class="col-md-6">
-            <h2>Новости Баскетбола</h2>
+            <div class="news-section">
+                <h2 class="text-black">Новости Баскетбола</h2>
+                {% if Basket_news %}
+                    {% for news in Basket_news %}
+                        <div class="news-item">
+                            <h4>{{ news.title }}</h4>
+                            {% if news.image %}
+                                <img src="{{ news.image.url }}" alt="{{ news.title }}" style="width:100%; max-height:200px; object-fit:cover;">
+                            {% endif %}
+                            <p>{{ news.content|truncatewords:30 }}</p>
+                            <a href="{% url 'news_detail' news.id %}" class="btn btn-secondary">Подробнее</a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Нет доступных новостей.</p>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>

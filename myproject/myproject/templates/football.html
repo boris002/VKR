@@ -4,10 +4,8 @@
 {% block extra_styles %}
 <style>
     body {
-        background-image: url('{% static "img/football.jpg" %}');
-        background-size: cover;
+        background-color: aliceblue;
         background-position: center;
-        background-repeat: no-repeat;
     }
     .liga-button {
         margin-top: 10px;
@@ -29,7 +27,7 @@
     <div class="row">
         <!-- Блок с выбором лиги -->
         <div class="col-md-6">
-            <h2 class="text-white">Лиги</h2>
+            <h2 class="text-black">Лиги</h2>
             {% for liga in leagues %}
             <div class="d-grid gap-2 col-6 mx-auto mb-2">
                 <a href="{% url 'Matches' liga.idFootball_liga %}" class="btn btn-primary liga-button">
@@ -37,7 +35,7 @@
                 </a>
             </div>
             {% endfor %}
-            <h2 class="text-white">Еврокубки</h2>
+            <h2 class="text-black">Еврокубки</h2>
             {% for cup in euro_cups %}
             <div class="d-grid gap-2 col-6 mx-auto mb-2">
                 <a href="{% url 'Matches' cup.idFootball_liga %}" class="btn btn-success liga-button">
@@ -45,7 +43,7 @@
                 </a>
             </div>
             {% endfor %}
-            <h2 class="text-white">Кубки страны</h2>
+            <h2 class="text-black">Кубки страны</h2>
             {% for cup in cups %}
             <div class="d-grid gap-2 col-6 mx-auto mb-2">
                 <a href="{% url 'Matches' cup.idFootball_liga %}" class="btn btn-info liga-button">
