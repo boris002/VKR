@@ -5,7 +5,7 @@
 <style>
     /* Устанавливаем фон для всего тела документа */
     body {
-            background-color: #f7f7f7;
+            background-color:bisque;
         }
 
         .match-card,
@@ -29,6 +29,7 @@
             height: auto;
             margin-bottom: 15px;
         }
+        
 </style>
 {% endblock %}
     <div class="container mt-4">
@@ -72,37 +73,30 @@
         
     
             <!-- Колонка с кнопками и блоками информации -->
+
+        
             <div class="col-md-6">
-                <div class="content-switcher text-center">
-                    <button class="btn btn-info mb-1" onclick="showContent('standings')">Турнирная таблица</button>
-                    <button class="btn btn-info mb-1" onclick="showContent('statistics')">Статистика</button>
+                <div class="btn-group" role="group">
+                    <button type="submit" name="division_id" value="all" class="btn btn-info">Все дивизионы</button>
+                    {% for division in divisions %}
+                    <button type="submit" name="division_id" value="{{ division.id }}" class="btn btn-info">{{ division.name }}</button>
+                    {% endfor %}
                 </div>
-                <div id="standings" class="content-block">
-                    <h2>Турнирная таблица</h2>
-                    
-                </div>
-                
-                <div id="statistics" class="content-block" style="display:none;">
-                    <h2>Статистика</h2>
-                    <p>Статистика скоро появится.</p>
-                </div>
-            </div>
     
-            <!-- Блок новостей -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="news-card">
-                        <h2>Новости</h2>
-                        <!-- Здесь будет код для отображения новостей и изображений -->
-                    </div>
+                <div class="standings-card">
+                    <h3>Турнирная таблица ({{ current_division|default:"Все" }})</h3>
+                    {% for standing in standings %}
+                    <div>{{ standing.name }} - {{ standing.points }} points</div>
+                    {% empty %}
+                    <p>No standings available.</p>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
-    
+
     {% block extra_scripts %}
-    <script src="/static/js/Matches.js"></script>
-    <script src="/static/js/LeagueScores.js"></script>
+ 
     {% endblock %}
     
 {% endblock %}

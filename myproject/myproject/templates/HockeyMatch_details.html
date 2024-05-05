@@ -10,7 +10,10 @@
             <h5 class="card-title">{{ match.name }}</h5>
             <p class="card-text">
                 <strong>Дата и время:</strong> {{ match.date }}<br>
-                <strong>Победитель</strong> {{ match.win}}
+                <strong>Победитель:</strong> {{ match.win }}<br>
+                {% if match.score_in_series %}
+                <strong>Счёт серии:</strong> {{ match.score_in_series }}<br>
+                {% endif %}
             </p>
             <div class="row">
                 <div class="col-md-5 text-center">
@@ -21,13 +24,59 @@
                     <h3>VS</h3>
                     <p>Счёт: {{ match.goals.home }} - {{ match.goals.away }}</p>
                     <p>Счёт по периодам:</p>
-                    <p>1 период: {{ match.goals.home1 }} - {{ match.goals.away1 }}
-                    <p>2 период: {{ match.goals.home2 }} - {{ match.goals.away2 }}
-                    <p>3 период: {{ match.goals.home3 }} - {{ match.goals.away3 }}        
+                    <p>1 период: {{ match.goals.home1 }} - {{ match.goals.away1 }}</p>
+                    <p>2 период: {{ match.goals.home2 }} - {{ match.goals.away2 }}</p>
+                    <p>3 период: {{ match.goals.home3 }} - {{ match.goals.away3 }}</p>
+                    {% if match.additional_periods.overtime %}
+                    <strong>Овертайм:</strong> {{ match.additional_periods.overtime }}<br>
+                    {% endif %}
+                    {% if match.additional_periods.shootout %}
+                    <strong>Буллиты:</strong> {{ match.additional_periods.shootout }}<br>
+                    {% endif %}
                 </div>
                 <div class="col-md-5 text-center">
                     <img src="{{ match.teams.away.logo }}" alt="{{ match.teams.away.name }}" class="img-fluid">
                     <p>{{ match.teams.away.name }}</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Голы (домашняя команда)</h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Игрок</th>
+                                <th>Время</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for goal, time in match.goals.home_details %}
+                            <tr>
+                                <td>{{ goal }}</td>
+                                <td>{{ time }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-4 offset-md-4">
+                    <h5>Голы (гостевая команда)</h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Игрок</th>
+                                <th>Время</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for goal, time in match.goals.away_details %}
+                            <tr>
+                                <td>{{ goal }}</td>
+                                <td>{{ time }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <button onclick="window.history.back()" class="btn btn-primary">Вернуться к списку матчей</button>

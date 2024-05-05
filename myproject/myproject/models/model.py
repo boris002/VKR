@@ -105,6 +105,12 @@ class HockeyMatch(models.Model):
     accounted = models.BooleanField(default=False)
     win = models.CharField(max_length=255, blank=True, null=True)
     Save_time = models.DateTimeField(auto_now=True)
+    Home_goals = models.CharField(max_length=255)
+    Away_goals = models.CharField(max_length=255)
+    time_Hgoals = models.CharField(max_length=255)
+    time_Agoals = models.CharField(max_length=255)
+    Score_in_serias = models.CharField(max_length=255)
+
 
     class Meta:
         db_table = 'Hockey_matches'  # Указываем явное имя таблицы
@@ -264,3 +270,31 @@ class NewsForm(forms.ModelForm):
     class Meta:
         model = News
         fields = ['country', 'title', 'content', 'image', 'type', 'main']
+
+class HockeyStandings(models.Model):
+    league = models.ForeignKey('HockeyLeague', on_delete=models.CASCADE, related_name='standings', db_column='league_id')
+    division = models.ForeignKey('HockeyDivision', on_delete=models.CASCADE, related_name='standings', db_column='division_id')
+    name = models.CharField(max_length=255)
+    points = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.name} ({self.points} points)"
+
+    class Meta:
+        db_table = 'hockey_standings'
+        verbose_name = 'Hockey Standing'
+        verbose_name_plural = 'Hockey Standings'
+        ordering = ['points']
+
+class HockeyDivision(models.Model):
+    league = models.ForeignKey('HockeyLeague', on_delete=models.CASCADE, related_name='divisions', db_column='league_id')
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'hockey_division'
+        verbose_name = 'Hockey Division'
+        verbose_name_plural = 'Hockey Divisions'
+        ordering = ['name']

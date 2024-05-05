@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet, News, TypeSport, NewsForm, FootballTicketPurchase, HockeyTicketPurchase # Импортируйте модель, соответствующую таблице Matches
+from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet, News, TypeSport, NewsForm, FootballTicketPurchase, HockeyTicketPurchase, HockeyDivision, HockeyStandings
 from myproject.api_settings import API_HEADERS_Football, API_HEADERS_Hockey, API_HEADERS_Basket
 import json
 from django.utils import timezone
@@ -220,10 +220,10 @@ def determine_winner(match_data):
         return translate_text(match_data['teams']['home']['name'])
     elif match_data['teams']['away']['winner']:
         return translate_text(match_data['teams']['away']['name'])
-    elif match_data['goals']['home'] == match_data['goals']['away'] and match_data['goals']['home'] !='None':
+    elif (match_data['goals']['home'] == match_data['goals']['away'] and match_data['goals']['home'] !='null' and match_data['goals']['away'] !='null'):
         return 'Ничья'
     else:
-        return 'Неопределено'
+        return 'Неопред'
 
 def match_details_view(request, league_id, match_id):
     # Получение лиги и матча по ID
@@ -278,7 +278,6 @@ def football_view(request):
     leagues = FootballLiga.objects.filter(type__id=1).order_by('name')
     cups = FootballLiga.objects.filter(type__id=3).order_by('name')
     euro_cups = FootballLiga.objects.filter(type__id=2).order_by('name')
-
     return render(request, 'football.html', {
         'leagues': leagues,
         'euro_cups': euro_cups,
@@ -330,7 +329,7 @@ def Hockey_matches_view(request, id):
     league_id = league.id
     league_name = league.name
     today = timezone.now().date()
-   #teams = LeagueScore.objects.filter(league=league).order_by('-points')
+    divisions = HockeyDivision.objects.filter(league_id=league.id).order_by('name')
 
     # Получение выбранной даты или текущей даты, если дата не была выбрана
     selected_date = request.GET.get('date', today.strftime('%Y-%m-%d'))
@@ -342,21 +341,24 @@ def Hockey_matches_view(request, id):
 
     Hockey_matches = HockeyMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
-
+    division_id = request.GET.get('division_id')
+    if division_id == 'all' or not division_id:
+        standings = HockeyStandings.objects.filter(league_id=league).order_by('-points')
+    else:
+        standings = HockeyStandings.objects.filter(league_id=league, division_id=division_id).order_by('-points')
     # Если дата в пределах последних 1 дней или данных в базе нет, или они не учтены, делаем запрос к API
     if not Hockey_matches.exists() or Hockey_matches.filter(accounted=False).exists():
         update_HockeyMatches_from_api(selected_date_obj, league, cutoff_date)
         Hockey_matches = HockeyMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
 
    
-    #update_league_scores(matches, teams)
-
     return render(request, 'Hockey_Matches.html', {
         'Hockey_Matches': Hockey_matches,
         'league': league,
         'league_name': league_name,
         'selected_date': selected_date,
         'league_id': league_id,
+        
     #'teams': teams,
     })
 
@@ -411,6 +413,11 @@ def update_HockeyMatches_from_api(date, league, cutoff_date):
                             # Обновляем только счет и статус accounted при необходимости
                             if existing_match.score != new_score:
                                 existing_match.score = new_score
+                                first_period=match_data['periods'].get('first'),
+                                second_period=match_data['periods'].get('second'),
+                                third_period=match_data['periods'].get('third'),
+                                overtimes=match_data['periods'].get('overtime'),
+                                shotouts=match_data['periods'].get('penalties'),
                                 existing_match.accounted = match_date < cutoff_date
                                 existing_match.Save_time = current_time  # Обновляем время сохранения
                                 existing_match.win = win
@@ -632,6 +639,22 @@ def Hockeymatch_details_view(request, league_id, match_id):
     league = get_object_or_404(HockeyLeague, pk=league_id)
     match = get_object_or_404(HockeyMatch, pk=match_id, league=league)
 
+    # Обработка потенциальных NULL значений в данных о голах и периодах
+    home_goals_list = match.Home_goals.split(',') if match.Home_goals else []
+    home_times_list = match.time_Hgoals.split(',') if match.time_Hgoals else []
+    away_goals_list = match.Away_goals.split(',') if match.Away_goals else []
+    away_times_list = match.time_Agoals.split(',') if match.time_Agoals else []
+    home1, away1 = (match.first_period.split('-') if match.first_period else ('', ''))
+    home2, away2 = (match.second_period.split('-') if match.second_period else ('', ''))
+    home3, away3 = (match.third_period.split('-') if match.third_period else ('', ''))
+
+    # Добавление overtime и shootouts, если они есть
+    additional_periods = {}
+    if match.overtimes:
+        additional_periods['overtime'] = match.overtimes
+    if match.shotouts:
+        additional_periods['shootout'] = match.shotouts
+
     # Преобразование данных о матче в словарь для передачи в шаблон
     match_data = {
         'name': f"{match.home_team} vs {match.away_team}",
@@ -646,17 +669,19 @@ def Hockeymatch_details_view(request, league_id, match_id):
             }
         },
         'goals': {
-            'home': match.score.split('-')[0].strip(),
-            'away': match.score.split('-')[1].strip(),
-            'home1': match.first_period.split('-')[0].strip(),
-            'away1': match.first_period.split('-')[1].strip(),
-            'home2': match.second_period.split('-')[0].strip(),
-            'away2': match.second_period.split('-')[1].strip(),
-            'home3': match.third_period.split('-')[0].strip(),
-            'away3': match.third_period.split('-')[1].strip(),
+            'home': match.score.split('-')[0].strip() if match.score else '0',
+            'away': match.score.split('-')[1].strip() if match.score else '0',
+            'home1': home1.strip(),
+            'away1': away1.strip(),
+            'home2': home2.strip(),
+            'away2': away2.strip(),
+            'home3': home3.strip(),
+            'away3': away3.strip(),
         },
         'win': match.win,
-        'date': match.match_date.strftime('%Y-%m-%d %H:%M')
+        'date': match.match_date.strftime('%Y-%m-%d %H:%M'),
+        'score_in_series': match.Score_in_serias if match.Score_in_serias else None,
+        'additional_periods': additional_periods
     }
 
     return render(request, 'HockeyMatch_details.html', {

@@ -1,12 +1,40 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Создать новость</button>
-</form>
-
+<div class="container mt-4">
+    <h2>Создать новость</h2>
+    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_country">Страна:</label>
+            <input type="text" name="country" class="form-control" id="id_country" value="{{ form.country.value }}">
+        </div>
+        <div class="form-group">
+            <label for="id_title">Заголовок:</label>
+            <input type="text" name="title" class="form-control" id="id_title" value="{{ form.title.value }}">
+        </div>
+        <div class="form-group">
+            <label for="id_content">Содержание:</label>
+            <textarea name="content" class="form-control" id="id_content">{{ form.content.value }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="id_image">Изображение:</label>
+            <input type="file" name="image" class="form-control-file" id="id_image">
+        </div>
+        <div class="form-group">
+            <label for="id_type">Тип:</label>
+            <select name="type" class="form-control" id="id_type">
+                <option value="">---------</option>
+                {% for choice in form.type.field.choices %}
+                <option value="{{ choice.0 }}" {% if form.type.value == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-check mb-2">
+            <input type="checkbox" name="main" class="form-check-input" id="id_main" {% if form.main.value %}checked{% endif %}>
+            <label class="form-check-label" for="id_main">Основная новость</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Создать новость</button>
+    </form>
 </div>
 {% endblock %}
