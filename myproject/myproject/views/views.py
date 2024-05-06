@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet, News, TypeSport, NewsForm, FootballTicketPurchase, HockeyTicketPurchase, HockeyDivision, HockeyStandings
+from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet, News, TypeSport, NewsForm, FootballTicketPurchase, HockeyTicketPurchase, HockeyDivision, HockeyStandings, LeagueStatistic
 from myproject.api_settings import API_HEADERS_Football, API_HEADERS_Hockey, API_HEADERS_Basket
 import json
 from django.utils import timezone
@@ -18,6 +18,9 @@ from django.shortcuts import redirect
 from threading import Thread
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import login_required
+from decimal import Decimal
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
@@ -109,6 +112,7 @@ def matches_view(request, id):
     country = league.country
     today = timezone.now().date()
     teams = LeagueScore.objects.filter(league=league).order_by('-points')
+    league_statistics = LeagueStatistic.objects.filter(league=league)
 
     # Получение выбранной даты или текущей даты, если дата не была выбрана
     selected_date = request.GET.get('date', today.strftime('%Y-%m-%d'))
@@ -139,6 +143,8 @@ def matches_view(request, id):
         'league_id': league_id,
         'teams': teams,
         'is_journalist': is_journalist,
+        'league_statistics': league_statistics,  
+
     })
 
 
@@ -329,7 +335,6 @@ def Hockey_matches_view(request, id):
     league_id = league.id
     league_name = league.name
     today = timezone.now().date()
-    divisions = HockeyDivision.objects.filter(league_id=league.id).order_by('name')
 
     # Получение выбранной даты или текущей даты, если дата не была выбрана
     selected_date = request.GET.get('date', today.strftime('%Y-%m-%d'))
@@ -341,24 +346,22 @@ def Hockey_matches_view(request, id):
 
     Hockey_matches = HockeyMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
     cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
-    division_id = request.GET.get('division_id')
-    if division_id == 'all' or not division_id:
-        standings = HockeyStandings.objects.filter(league_id=league).order_by('-points')
-    else:
-        standings = HockeyStandings.objects.filter(league_id=league, division_id=division_id).order_by('-points')
+
     # Если дата в пределах последних 1 дней или данных в базе нет, или они не учтены, делаем запрос к API
     if not Hockey_matches.exists() or Hockey_matches.filter(accounted=False).exists():
         update_HockeyMatches_from_api(selected_date_obj, league, cutoff_date)
         Hockey_matches = HockeyMatch.objects.filter(league=league, match_date__date=selected_date_obj.date())
 
-   
+    standings = HockeyStandings.objects.filter(league=league)
+    divisions = HockeyDivision.objects.filter(league=league)
     return render(request, 'Hockey_Matches.html', {
         'Hockey_Matches': Hockey_matches,
         'league': league,
         'league_name': league_name,
         'selected_date': selected_date,
         'league_id': league_id,
-        
+        'standings': standings,
+        'divisions': divisions,
     #'teams': teams,
     })
 
@@ -447,7 +450,7 @@ def update_HockeyMatches_from_api(date, league, cutoff_date):
         else:
             print(f"Недавно были обновления для {league.name} на дату {date}, не обращаемся к API.")
 
-    
+@login_required   
 def tickets(request):
     current_date = datetime.now().date()
     football_matches = TicketsFootball.objects.filter(id_matches__match_date__gte=current_date)
@@ -487,28 +490,77 @@ def buy_ticket(request):
         if payment_method == 'wallet':
             wallet.balance -= total_price
             wallet.save()
+            ticket.quantity -= quantity
+            ticket.save()
+
+            # Create ticket purchase record
+            if football_match:
+                FootballTicketPurchase.objects.create(user=request.user, ticket=football_match)
+            elif hockey_match:
+                HockeyTicketPurchase.objects.create(user=request.user, ticket=hockey_match)
+
+            messages.success(request, 'Билеты успешно куплены')
         elif payment_method == 'card':
-            # Placeholder for card payment processing
-            pass
+              # Reduce the number of available tickets
+            ticket.quantity -= quantity
+            ticket.save()
+
+            # Create ticket purchase record
+            if football_match:
+                FootballTicketPurchase.objects.create(user=request.user, ticket=football_match)
+            elif hockey_match:
+                HockeyTicketPurchase.objects.create(user=request.user, ticket=hockey_match)
+
+            messages.success(request, 'Билеты успешно куплены')
+            return cart_pay(total_price, quantity, request)
         else:
             messages.error(request, 'Выберите метод оплаты')
             return redirect('tickets')
 
-        # Reduce the number of available tickets
-        ticket.quantity -= quantity
-        ticket.save()
-
-        # Create ticket purchase record
-        if football_match:
-            FootballTicketPurchase.objects.create(user=request.user, ticket=football_match)
-        elif hockey_match:
-            HockeyTicketPurchase.objects.create(user=request.user, ticket=hockey_match)
-
-        messages.success(request, 'Билеты успешно куплены')
-        return redirect('tickets')
+      
 
     return redirect('tickets')
 
+def cart_pay(total, quantity, request):
+    if request.method == 'POST':
+        # Получение данных из формы
+        card_number = request.POST.get('card_number')
+        expiry_date = request.POST.get('expiry_date')
+
+        # После успешной обработки платежа выполните перенаправление на главную страницу
+
+    # Передаем сумму в контекст шаблона
+    return render(request, 'cart_pay.html', {'total_amount': total,'quantity': quantity})
+
+def cart_pay_wallet(request):
+    if request.method == 'POST':
+        # Получение данных из формы
+        amount = request.POST.get('amount')
+        card_number = request.POST.get('card_number')
+        expiry_date = request.POST.get('expiry_date')
+
+        # Проверка на наличие суммы в запросе
+        if not amount:
+            messages.error(request, 'Не указана сумма платежа')
+            return redirect('home')  # Перенаправление на главную страницу или другую страницу по вашему выбору
+
+        # Попытка конвертировать сумму в Decimal
+        try:
+            amount = Decimal(amount)
+        except ValueError:
+            messages.error(request, 'Неверный формат суммы платежа')
+            return redirect('home')  # Перенаправление на главную страницу или другую страницу по вашему выбору
+
+        # После успешной обработки платежа
+        # Увеличение баланса кошелька пользователя на указанную сумму
+        user_wallet = Wallet.objects.get(user=request.user)
+        user_wallet.balance += amount
+        user_wallet.save()
+
+        messages.success(request, 'Платеж успешно обработан')
+        return redirect('main')  # Перенаправление на главную страницу или другую страницу по вашему выбору
+
+    return render(request, 'cart_pay_wallet.html')
 
 def Basket_matches_view(request, id):
     league = get_object_or_404(BasketLeague, pk=id)
@@ -745,7 +797,7 @@ def update_matches_for_all_leagues(date, cutoff_date):
         except Match.DoesNotExist:
             time_since_last_save = None
         
-        if not matches_for_date or  time_since_last_save is None or time_since_last_save > timedelta(minutes=5):
+        if not matches_for_date or  time_since_last_save is None or time_since_last_save > timedelta(minutes=600):
             print(f"Обращаемся к API для лиги {league.name} на дату {date}")
             api_url = f"https://v3.football.api-sports.io/fixtures?date={date.strftime('%Y-%m-%d')}"
             response = requests.get(api_url, headers=API_HEADERS_Football)
@@ -960,7 +1012,7 @@ def update_BasketMatches_from_api_all(date, cutoff_date):
             print(f"Недавно были обновления для {league.name} на дату {date}, не обращаемся к API.")
 
 
-
+@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
 def edit_league_details(request, league_id):
     league = get_object_or_404(FootballLiga, pk=league_id)
     selected_date = request.GET.get('matchDate')  # Get the date from GET request
@@ -996,18 +1048,17 @@ def edit_league_details(request, league_id):
             'teams': teams,
             'selected_date': selected_date or ""  # Pass back to template to maintain state
         })
-
 def news_view(request):
     news_list = News.objects.all().order_by('-Date')  # Получаем все новости, отсортированные по дате
     return render(request, 'news.html', {'news_list': news_list})
 
-
+@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
 def create_news(request):
     if request.method == 'POST':
         form = NewsForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            return redirect('news')  # Перенаправление на список новостей после создания
+            return redirect('news')  
     else:
         form = NewsForm()
     return render(request, 'create_news.html', {'form': form})
@@ -1018,6 +1069,8 @@ def news_detail_view(request, news_id):
     news = get_object_or_404(News, id=news_id)
     return render(request, 'news-detail.html', {'news': news})
 
+
+@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
 def edit_news(request, news_id):
     news = get_object_or_404(News, id=news_id)
     if request.method == 'POST':
@@ -1029,6 +1082,8 @@ def edit_news(request, news_id):
         form = NewsForm(instance=news)
     return render(request, 'edit_news.html', {'form': form})
 
+
+@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
 def delete_news(request, news_id):
     if request.method == 'POST':
         news = get_object_or_404(News, pk=news_id)
@@ -1040,7 +1095,7 @@ def delete_news(request, news_id):
 
 
 
-
+@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
 def create_or_edit_ticket(request, ticket_id=None, sport_type='football'):
     TicketModel = TicketsFootball if sport_type == 'football' else TicketsHockey
 
@@ -1080,7 +1135,7 @@ def create_or_edit_ticket(request, ticket_id=None, sport_type='football'):
     }
     return render(request, 'create_or_edit_ticket.html', context)
 
-
+@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
 def delete_ticket(request, ticket_id, sport_type='football'):
     TicketModel = TicketsFootball if sport_type == 'football' else TicketsHockey
     ticket = get_object_or_404(TicketModel, pk=ticket_id)

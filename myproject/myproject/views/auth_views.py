@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from myproject.models.model import FootballTicketPurchase, HockeyTicketPurchase, Match, HockeyMatch
+from myproject.models.model import FootballTicketPurchase, HockeyTicketPurchase, Match, HockeyMatch, Wallet
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
@@ -42,13 +42,16 @@ class RegisterView(FormView):
     success_url = reverse_lazy('main')
 
     def form_valid(self, form):
-        user = form.save()  # Сохраняем пользователя
-        group = Group.objects.get(name='auth+')  # Получаем группу "auth+"
-        user.groups.add(group)  # Добавляем пользователя в группу "auth+"
-        user.save()  # Сохраняем изменения пользователя
+        user = form.save() 
+        group = Group.objects.get(name='auth+') 
+        user.groups.add(group) 
+        user.save()  
         
         if user is not None:
             login(self.request, user)
+            
+            Wallet.objects.create(user=user)
+            
         return super(RegisterView, self).form_valid(form)
 
     def get(self, *args, **kwargs):

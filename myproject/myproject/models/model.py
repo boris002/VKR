@@ -298,3 +298,15 @@ class HockeyDivision(models.Model):
         verbose_name = 'Hockey Division'
         verbose_name_plural = 'Hockey Divisions'
         ordering = ['name']
+
+
+class LeagueStatistic(models.Model):
+    league = models.ForeignKey(FootballLiga, on_delete=models.CASCADE, db_column='league_id')
+    player_name = models.CharField(max_length=255, null=True)
+    goal = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'league_statistic'
+
+    def __str__(self):
+        return f"{self.league.name} - {self.player_name}"

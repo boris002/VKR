@@ -53,21 +53,21 @@
         <div class="row">
             <!-- Колонка результатов матчей -->
             <div class="col-md-6">
-                {% for match in matches %}  <!-- Исправьте здесь на matches -->
+                {% for match in matches %}  
                 <a href="{% url 'match_details' league_id=league_id match_id=match.id %}" class="match-card-link">
                     <div class="match-card">
                         <div class="row align-items-center">
                             <div class="col-md-4 text-center">
                                 <img src="{{ match.home_team_logo }}" alt="Логотип {{ match.home_team }}" class="team-logo">
-                                <p class="mt-2">{{ match.home_team }}</p> <!-- Убедитесь, что вы обращаетесь к правильным полям -->
+                                <p class="mt-2">{{ match.home_team }}</p> 
                             </div>
                             <div class="col-md-4 text-center">
                                 <p>VS</p>
-                                <p>Счёт: {{ match.score }}</p> <!-- Используйте score напрямую из модели -->
+                                <p>Счёт: {{ match.score }}</p>
                             </div>
                             <div class="col-md-4 text-center">
                                 <img src="{{ match.away_team_logo }}" alt="Логотип {{ match.away_team }}" class="team-logo">
-                                <p class="mt-2">{{ match.away_team }}</p> <!-- Убедитесь, что вы обращаетесь к правильным полям -->
+                                <p class="mt-2">{{ match.away_team }}</p> 
                             </div>
                         </div>
                     </div>
@@ -101,8 +101,7 @@
                                 <td>
                                     {% if request.user.is_staff %}
                                         <!-- Поле с возможностью редактирования для администратора -->
-                                        <input type="number" value="{{ team.points }}" name="points" data-team-id="{{ team.id }}">
-                                        <button onclick="updatePoints(this)">Обновить</button>
+                                        {{ team.points }}
                                     {% else %}
                                         <!-- Только просмотр для обычных пользователей -->
                                         {{ team.points }}
@@ -114,9 +113,17 @@
                     </table>
                 </div>
                 
-                <div id="statistics" class="content-block" style="display:none;">
+                <div id="statistics" class="content-block">
                     <h2>Статистика</h2>
-                    <p>Статистика скоро появится.</p>
+                    {% if league_statistics %}
+                        <ul>
+                            {% for statistic in league_statistics %}
+                                <li>{{ statistic.player_name }} - Голы: {{ statistic.goal }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>Нет доступной статистики.</p>
+                    {% endif %}
                 </div>
             </div>
     

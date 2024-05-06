@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Оплата</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="card_number">Номер карты:</label>
+            <input type="text" class="form-control" id="card_number" name="card_number" required>
+        </div>
+        <div class="form-group">
+            <label for="expiry_date">Дата окончания:</label>
+            <input type="text" class="form-control" id="expiry_date" name="expiry_date" placeholder="MM/YY" required>
+        </div>
+        <!-- Поле для отображения суммы -->
+        <div class="form-group">
+            <label for="total_amount">Сумма:</label>
+            <input type="text" class="form-control" id="total_amount" name="total_amount" value="{{ total_amount }}" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="quantity">Количество</label>
+            <input type="text" class="form-control" id="quantity" name="quantity" value="{{quantity}}" readonly>
+        </div>
+        <button type="submit" class="btn btn-primary">Оплатить</button>
+    </form>
+</div>
+{% endblock %}

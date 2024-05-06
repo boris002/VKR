@@ -85,8 +85,15 @@
     
                 <div class="standings-card">
                     <h3>Турнирная таблица ({{ current_division|default:"Все" }})</h3>
-                    {% for standing in standings %}
-                    <div>{{ standing.name }} - {{ standing.points }} points</div>
+                    {% for division in divisions %}
+                    <h4>{{ division.name }}</h4>
+                    <ul>
+                        {% for standing in standings %}
+                        {% if standing.division == division %}
+                        <li>{{ standing.name }} - {{ standing.points }} points</li>
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
                     {% empty %}
                     <p>No standings available.</p>
                     {% endfor %}

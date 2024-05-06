@@ -52,8 +52,6 @@
                         <li class="list-group-item">
                             {{ ticket.ticket.id_matches.home_team }} vs {{ ticket.ticket.id_matches.away_team }} - 
                             {{ ticket.ticket.id_matches.match_date|date:"d M Y H:i" }} - 
-                            {{ ticket.ticket.quantity }} шт. - {{ ticket.ticket.price }} руб. -
-                            Счёт: {{ ticket.ticket.id_matches.score|default:"TBD" }}
                         </li>
                         {% endfor %}
                     </ul>
@@ -67,8 +65,6 @@
                         <li class="list-group-item">
                             {{ ticket.ticket.id_matches.home_team }} vs {{ ticket.ticket.id_matches.away_team }} - 
                             {{ ticket.ticket.id_matches.match_date|date:"d M Y H:i" }} - 
-                            {{ ticket.ticket.quantity }} шт. - {{ ticket.ticket.price }} руб. -
-                            Счёт: {{ ticket.ticket.id_matches.score|default:"TBD" }}
                         </li>
                         {% endfor %}
                     </ul>
