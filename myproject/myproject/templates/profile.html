@@ -50,8 +50,9 @@
                     <ul class="list-group">
                         {% for ticket in football_tickets %}
                         <li class="list-group-item">
-                            {{ ticket.ticket.id_matches.home_team }} vs {{ ticket.ticket.id_matches.away_team }} - 
-                            {{ ticket.ticket.id_matches.match_date|date:"d M Y H:i" }} - 
+                           Матч: {{ ticket.ticket.id_matches.home_team }} vs {{ ticket.ticket.id_matches.away_team }},
+                           Дата матча: {{ ticket.ticket.id_matches.match_date|date:"d M Y H:i" }},
+                            Количество: {{ ticket.quanty }}  
                         </li>
                         {% endfor %}
                     </ul>
@@ -78,7 +79,7 @@
     <div class="change-password mt-3">
         <button class="btn btn-secondary" onclick="window.location.href='{% url 'password_change' %}'">Изменить пароль</button>
     </div>
-</div>
+
 
 <!-- Форма редактирования профиля -->
 <div class="container">
@@ -94,18 +95,9 @@
         </div>
     </div>
 </div>
-
-<!-- Раздел для отображения последних матчей -->
-<div class="container">
-    <div class="recent-matches-section card mt-3">
-        <div class="card-header">
-            <h4>История просмотров</h4>
-        </div>
-        <div class="card-body">
-            <!-- Здесь отображайте последние матчи, которые просмотрел пользователь -->
-        </div>
-    </div>
 </div>
+<!-- Раздел для отображения последних матчей -->
+
 
 {% endblock %}
 

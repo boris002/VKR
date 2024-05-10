@@ -2,15 +2,16 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.views import LogoutView
+from django.contrib.auth.models import User
+from django.contrib.auth.models import Group
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic.edit import FormView
 from django import forms
-from django.contrib.auth.models import User
-from django.contrib.auth.models import Group
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+
 from myproject.models.model import FootballTicketPurchase, HockeyTicketPurchase, Match, HockeyMatch, Wallet
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)

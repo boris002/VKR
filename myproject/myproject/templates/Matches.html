@@ -20,6 +20,8 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+            text-decoration: none;
+
         }
 
         .team-logo {
@@ -33,12 +35,15 @@
             height: auto;
             margin-bottom: 15px;
         }
+        .table {
+        border-radius: 20px;
+    }
 </style>
 {% endblock %}
 
 
-    <div class="container mt-4">
-        <h1 class="text-center mb-4">Матчи и турнирная таблица для {{ league_name }} в {{ country }}</h1>
+    <div class="container mt-8">
+        <h1 class="text-center mb-4">Матчи и турнирная таблица</h1>
         <p class="text-center">Дата: {{ selected_date }}</p>
         {% if request.user.is_staff or request.user|has_group:"journalist" %}
          <a href="{% url 'edit' league_id=league_id %}" class="btn btn-warning">Редактировать</a>
@@ -49,12 +54,17 @@
                 <button type="submit" class="btn btn-primary mt-2">Выбрать дату</button>
             </div>
         </form>
-    
+        <div class="col-md-6 offset-md-6"> <!-- Добавлен offset-md-6 для сдвига вправо -->
+            <div class="content-switcher text-center">
+                <button class="btn btn-info mb-1" onclick="showContent('standings')">Турнирная таблица</button>
+                <button class="btn btn-info mb-1" onclick="showContent('statistics')">Статистика</button>
+            </div>
+        </div>
         <div class="row">
             <!-- Колонка результатов матчей -->
             <div class="col-md-6">
                 {% for match in matches %}  
-                <a href="{% url 'match_details' league_id=league_id match_id=match.id %}" class="match-card-link">
+                <a href="{% url 'match_details' league_id=league_id match_id=match.id %}" class="match-card-link"  style="   text-decoration: none; color: black;">
                     <div class="match-card">
                         <div class="row align-items-center">
                             <div class="col-md-4 text-center">
@@ -81,12 +91,8 @@
     
             <!-- Колонка с кнопками и блоками информации -->
             <div class="col-md-6">
-                <div class="content-switcher text-center">
-                    <button class="btn btn-info mb-1" onclick="showContent('standings')">Турнирная таблица</button>
-                    <button class="btn btn-info mb-1" onclick="showContent('statistics')">Статистика</button>
-                </div>
-                <div id="standings" class="content-block">
-                    <h2>Турнирная таблица</h2>
+                
+                <div id="standings" class="content-block" >
                     <table class="table">
                         <thead>
                             <tr>
@@ -114,7 +120,6 @@
                 </div>
                 
                 <div id="statistics" class="content-block">
-                    <h2>Статистика</h2>
                     {% if league_statistics %}
                         <ul>
                             {% for statistic in league_statistics %}

@@ -165,7 +165,7 @@ class TicketsHockey(models.Model):
 class FootballTicketPurchase(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     ticket = models.ForeignKey(TicketsFootball, on_delete=models.CASCADE)
-
+    quanty = models.IntegerField()
     class Meta:
         db_table = 'football_ticket_purchases'
         verbose_name = "Football Ticket Purchase"
@@ -177,7 +177,7 @@ class FootballTicketPurchase(models.Model):
 class HockeyTicketPurchase(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     ticket = models.ForeignKey(TicketsHockey, on_delete=models.CASCADE)
-
+    quanty = models.IntegerField()
     class Meta:
         db_table = 'hockey_ticket_purchases'
         verbose_name = "Hockey Ticket Purchase"

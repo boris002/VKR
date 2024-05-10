@@ -14,14 +14,17 @@ from django.shortcuts import render
 from googletrans import Translator, LANGUAGES
 from deep_translator import GoogleTranslator
 from django.contrib import messages
-from django.shortcuts import redirect
+from django.shortcuts import redirect, reverse
 from threading import Thread
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.decorators import login_required
 from decimal import Decimal
+from django.http import HttpResponseRedirect
 
+import uuid
+from yookassa import Configuration, Payment
 # Настройка логгера
 logger = logging.getLogger(__name__)
 custom_translations = {
@@ -495,9 +498,9 @@ def buy_ticket(request):
 
             # Create ticket purchase record
             if football_match:
-                FootballTicketPurchase.objects.create(user=request.user, ticket=football_match)
+                FootballTicketPurchase.objects.create(user=request.user, ticket=football_match,quanty = quantity)
             elif hockey_match:
-                HockeyTicketPurchase.objects.create(user=request.user, ticket=hockey_match)
+                HockeyTicketPurchase.objects.create(user=request.user, ticket=hockey_match,quanty = quantity)
 
             messages.success(request, 'Билеты успешно куплены')
         elif payment_method == 'card':
@@ -507,12 +510,15 @@ def buy_ticket(request):
 
             # Create ticket purchase record
             if football_match:
-                FootballTicketPurchase.objects.create(user=request.user, ticket=football_match)
+                FootballTicketPurchase.objects.create(user=request.user, ticket=football_match, quanty = quantity)
             elif hockey_match:
-                HockeyTicketPurchase.objects.create(user=request.user, ticket=hockey_match)
+                HockeyTicketPurchase.objects.create(user=request.user, ticket=hockey_match,quanty = quantity)
 
             messages.success(request, 'Билеты успешно куплены')
-            return cart_pay(total_price, quantity, request)
+            payment = create_payment(total_price, request.build_absolute_uri(reverse('main')))
+
+        # Возвращение URL для перенаправления пользователя на страницу оплаты
+            return HttpResponseRedirect(payment.confirmation.confirmation_url)
         else:
             messages.error(request, 'Выберите метод оплаты')
             return redirect('tickets')
@@ -520,7 +526,24 @@ def buy_ticket(request):
       
 
     return redirect('tickets')
+def create_payment(total_price, return_url):
+    Configuration.account_id = '383395'
+    Configuration.secret_key = 'test_JXZA1vwsqfXxtMib4C-e6haHJHBqjNWWfYor_ESW7J4'
 
+    payment = Payment.create({
+        "amount": {
+            "value": str(total_price),
+            "currency": "RUB"
+        },
+        "confirmation": {
+            "type": "redirect",
+            "return_url": return_url
+        },
+        "capture": True,
+        "description": "Оплата за билеты"
+    }, uuid.uuid4())
+
+    return payment
 def cart_pay(total, quantity, request):
     if request.method == 'POST':
         # Получение данных из формы
@@ -1033,7 +1056,7 @@ def edit_league_details(request, league_id):
             team.points = int(request.POST.get(f'points_{team.id}', team.points))
             team.save()
 
-        return redirect(f'edit?league_id={league_id}&matchDate={selected_date}')  # Redirect to keep the filter
+        return redirect(f'football')  # Redirect to keep the filter
 
     else:
         if selected_date:

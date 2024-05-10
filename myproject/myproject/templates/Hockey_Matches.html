@@ -4,10 +4,7 @@
 {% block extra_styles %}
 <style>
     /* Устанавливаем фон для всего тела документа */
-    body {
-            background-color:bisque;
-        }
-
+  
         .match-card,
         .standings-card,
         .news-card {
@@ -47,7 +44,7 @@
             <!-- Колонка результатов матчей -->
             <div class="col-md-6">
                 {% for Hockey_Match in Hockey_Matches %}  <!-- Исправьте здесь на matches -->
-                <a href="{% url 'HockeyMatch_details' league_id=league_id match_id=Hockey_Match.id %}" class="match-card-link">
+                <a href="{% url 'HockeyMatch_details' league_id=league_id match_id=Hockey_Match.id %}" class="match-card-link" style="   text-decoration: none; color: black;">
                     <div class="match-card">
                         <div class="row align-items-center">
                             <div class="col-md-4 text-center">
@@ -76,15 +73,8 @@
 
         
             <div class="col-md-6">
-                <div class="btn-group" role="group">
-                    <button type="submit" name="division_id" value="all" class="btn btn-info">Все дивизионы</button>
-                    {% for division in divisions %}
-                    <button type="submit" name="division_id" value="{{ division.id }}" class="btn btn-info">{{ division.name }}</button>
-                    {% endfor %}
-                </div>
     
                 <div class="standings-card">
-                    <h3>Турнирная таблица ({{ current_division|default:"Все" }})</h3>
                     {% for division in divisions %}
                     <h4>{{ division.name }}</h4>
                     <ul>

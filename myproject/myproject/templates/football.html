@@ -4,7 +4,7 @@
 {% block extra_styles %}
 <style>
     body {
-        background-color: aliceblue;
+    
         background-position: center;
     }
     .liga-button {
@@ -31,7 +31,11 @@
             {% for liga in leagues %}
             <div class="d-grid gap-2 col-6 mx-auto mb-2">
                 <a href="{% url 'Matches' liga.idFootball_liga %}" class="btn btn-primary liga-button">
-                    {{ liga.name }} - {{ liga.country }}
+                    {% if liga.country == 'Russia' %}
+                     Russia Premier league
+                {% else %}
+                    {{ liga.name }} 
+                {% endif %}
                 </a>
             </div>
             {% endfor %}
@@ -39,7 +43,7 @@
             {% for cup in euro_cups %}
             <div class="d-grid gap-2 col-6 mx-auto mb-2">
                 <a href="{% url 'Matches' cup.idFootball_liga %}" class="btn btn-success liga-button">
-                    {{ cup.name }} - {{ cup.country }}
+                    {{ cup.name }} 
                 </a>
             </div>
             {% endfor %}

@@ -4,9 +4,7 @@
 {% block extra_styles %}
 <style>
     /* Устанавливаем фон для всего тела документа */
-    body {
-            background-color: #f7f7f7;
-        }
+    
 
         .match-card,
         .standings-card,
@@ -74,10 +72,6 @@
     
             <!-- Колонка с кнопками и блоками информации -->
             <div class="col-md-6">
-                <div class="content-switcher text-center">
-                    <button class="btn btn-info mb-1" onclick="showContent('standings')">Турнирная таблица</button>
-                    <button class="btn btn-info mb-1" onclick="showContent('statistics')">Статистика</button>
-                </div>
                 <div id="standings" class="content-block">
                     <h2>Турнирная таблица</h2>
                     
@@ -90,17 +84,7 @@
             </div>
     
             <!-- Блок новостей -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="news-card">
-                        <h2>Новости</h2>
-                        <!-- Здесь будет код для отображения новостей и изображений -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
+            
         
         {% block extra_scripts %}
         <script src="/static/js/Matches.js"></script>
