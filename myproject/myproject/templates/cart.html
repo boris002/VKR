@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Корзина</h1>
+    {% if cart_items %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Билет</th>
+                    <th>Количество</th>
+                    <th>Цена</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart_items %}
+                <tr>
+                    <td>{{ item.ticket }}</td>
+                    <td>
+                        <form method="post" action="{% url 'update_cart' %}" class="update-cart-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="ticket_id" value="{{ item.ticket.id }}">
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.ticket.quantity }}" class="form-control d-inline-block w-auto quantity-input">
+                        </form>
+                    </td>
+                    <td>{{ item.ticket.price }}</td>
+                    <td>
+                        <a href="{% url 'remove_from_cart' item.ticket.id %}" class="btn btn-danger">Удалить</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p>Общая стоимость: {{ total_price }}</p>
+        <div class="mb-4">
+            <div class="btn-group" role="group" aria-label="Метод оплаты">
+                <button type="button" class="btn btn-primary payment-method" data-value="wallet">Оплатить с кошелька</button>
+                <button type="button" class="btn btn-primary payment-method" data-value="card">Оплатить картой</button>
+            </div>
+        </div>
+        
+        
+        <form method="post" action="{% url 'checkout' %}">
+            {% csrf_token %}
+            <input type="hidden" id="selected_payment_method" name="payment_method">
+            <button type="submit" class="btn btn-primary">Оформить заказ</button>
+        </form>
+        
+    {% else %}
+        <p>Ваша корзина пуста.</p>
+    {% endif %}
+</div>
+
+{% block extra_scripts %}
+<script>
+    // Найти все поля ввода количества билетов и добавить слушатель событий для изменения значений
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    quantityInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const form = this.closest('.update-cart-form');
+            form.submit(); // Отправить форму при изменении значения поля ввода
+        });
+    });
+
+    // Обработчик клика на кнопки выбора метода оплаты
+    const paymentButtons = document.querySelectorAll('.payment-method');
+    paymentButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const selectedPaymentMethod = this.getAttribute('data-value');
+            document.getElementById('selected_payment_method').value = selectedPaymentMethod;
+            // Подсветить выбранную кнопку
+            paymentButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}
+

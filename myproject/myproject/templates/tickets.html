@@ -17,24 +17,17 @@
                     <p class="card-text">Домашняя команда: {{ match.id_matches.home_team }}</p>
                     <p class="card-text">Гостевая команда: {{ match.id_matches.away_team }}</p>
                     <p class="card-text">Цена билета: {{ match.price }}</p>
-                    <form action="{% url 'buy_ticket' %}" method="post" id="buyTicketFormFootball_{{ match.id }}">
+                    <form action="{% url 'add_to_cart' %}" method="post">
                         {% csrf_token %}
-                        <input type="hidden" name="match_id" value="{{ match.id }}">
+                        <input type="hidden" name="ticket_id" value="{{ match.id }}">
                         <div class="form-group">
                             <label for="quantity">Количество билетов:</label>
                             <input type="number" class="form-control" id="quantity" name="quantity" min="1" max="{{ match.quantity }}">
                         </div>
-                        <div class="form-group">
-                            <label for="payment_method">Выберите метод оплаты:</label>
-                            <select class="form-control" id="payment_method_football_{{ match.id }}" name="payment_method">
-                                <option value="wallet">Кошелёк</option>
-                                <option value="card">Карта</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Купить</button>
+                        <button type="submit" class="btn btn-primary">Добавить в корзину</button>
                         {% if request.user.is_staff or request.user|has_group:"journalist" %}
                         <a href="{% url 'edit_ticket' match.id 'football' %}" class="btn btn-info">Редактировать</a>
-                        <a href="{% url 'delete_ticket' match.id 'football' %}" class="btn btn-danger" onclick="return confirm('Are you sure?')">Удалить</a>
+                        <a href="{% url 'delete_ticket' match.id 'football' %}" class="btn btn-danger" onclick="return confirm('Вы уверены?')">Удалить</a>
                         {% endif %}
                     </form>
                 </div>
@@ -54,24 +47,17 @@
                     <p class="card-text">Домашняя команда: {{ match.id_matches.home_team }}</p>
                     <p class="card-text">Гостевая команда: {{ match.id_matches.away_team }}</p>
                     <p class="card-text">Цена билета: {{ match.price }}</p>
-                    <form action="{% url 'buy_ticket' %}" method="post" id="buyTicketFormHockey_{{ match.id }}">
+                    <form action="{% url 'add_to_cart' %}" method="post">
                         {% csrf_token %}
-                        <input type="hidden" name="match_id" value="{{ match.id }}">
+                        <input type="hidden" name="ticket_id" value="{{ match.id }}">
                         <div class="form-group">
                             <label for="quantity">Количество билетов:</label>
                             <input type="number" class="form-control" id="quantity" name="quantity" min="1" max="{{ match.quantity }}">
                         </div>
-                        <div class="form-group">
-                            <label for="payment_method">Выберите метод оплаты:</label>
-                            <select class="form-control" id="payment_method_hockey_{{ match.id }}" name="payment_method">
-                                <option value="wallet">Кошелёк</option>
-                                <option value="card">Карта</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Купить</button>
+                        <button type="submit" class="btn btn-primary">Добавить в корзину</button>
                         {% if request.user.is_staff or request.user|has_group:"journalist" %}
                         <a href="{% url 'edit_ticket' match.id 'hockey' %}" class="btn btn-info">Редактировать</a>
-                        <a href="{% url 'delete_ticket' match.id 'hockey' %}" class="btn btn-danger" onclick="return confirm('Are you sure?')">Удалить</a>
+                        <a href="{% url 'delete_ticket' match.id 'hockey' %}" class="btn btn-danger" onclick="return confirm('Вы уверены?')">Удалить</a>
                         {% endif %}
                     </form>
                 </div>

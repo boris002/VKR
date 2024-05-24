@@ -280,9 +280,8 @@ def match_details_view(request, league_id, match_id):
     })
 
 def football_view(request):
-    # Предполагаем, что у футбола в TypeSport id = 1 или можно найти точное название 'football'
-    football_type = TypeSport.objects.get(name='football')  # Ищем тип "football"
-    football_news = News.objects.filter(type=football_type).order_by('-Date')[:10]  # Получаем последние 10 новостей по футболу
+    football_type = TypeSport.objects.get(name='football') 
+    football_news = News.objects.filter(type=football_type).order_by('-Date')[:10] 
 
     leagues = FootballLiga.objects.filter(type__id=1).order_by('name')
     cups = FootballLiga.objects.filter(type__id=3).order_by('name')
@@ -291,7 +290,7 @@ def football_view(request):
         'leagues': leagues,
         'euro_cups': euro_cups,
         'cups': cups,
-        'football_news': football_news  # Добавляем новости в контекст
+        'football_news': football_news 
     })
 
 def Hockey_view(request):
@@ -462,10 +461,10 @@ def tickets(request):
     return render(request, 'tickets.html', {'football_matches': football_matches, 'hockey_matches': hockey_matches, 'ticket_types': ticket_types})
 
 @transaction.atomic
-def buy_ticket(request):
+def buy_ticket(request,):
     if request.method == 'POST':
         match_id = request.POST.get('match_id')
-        quantity = int(request.POST.get('quantity'))
+        quantity = int(request.POST.get('quantity'))  # Получение количества билетов из POST-запроса
         payment_method = request.POST.get('payment_method')
 
         # Fetch the match information
@@ -526,6 +525,109 @@ def buy_ticket(request):
       
 
     return redirect('tickets')
+
+def add_to_cart(request):
+    if request.method == 'POST':
+        ticket_id = request.POST.get('ticket_id')
+        quantity = int(request.POST.get('quantity', 1))
+
+        cart = request.session.get('cart', {})
+        if ticket_id in cart:
+            cart[ticket_id] += quantity
+        else:
+            cart[ticket_id] = quantity
+
+        request.session['cart'] = cart
+        messages.success(request, 'Билет добавлен в корзину.')
+        return redirect('view_cart')
+
+def view_cart(request):
+    cart = request.session.get('cart', {})
+    cart_items = []
+    total_price = 0
+
+    for ticket_id, quantity in cart.items():
+        try:
+            ticket = TicketsFootball.objects.get(id=ticket_id)
+        except TicketsFootball.DoesNotExist:
+            ticket = TicketsHockey.objects.get(id=ticket_id)
+        
+        cart_items.append({'ticket': ticket, 'quantity': quantity})
+        total_price += ticket.price * quantity
+
+    return render(request, 'cart.html', {'cart_items': cart_items, 'total_price': total_price})
+
+def update_cart(request):
+    if request.method == 'POST':
+        ticket_id = request.POST.get('ticket_id')
+        quantity = int(request.POST.get('quantity'))
+
+        cart = request.session.get('cart', {})
+        if ticket_id in cart:
+            if quantity > 0:
+                cart[ticket_id] = quantity
+            else:
+                del cart[ticket_id]
+
+        request.session['cart'] = cart
+        messages.success(request, 'Количество билетов обновлено.')
+        return redirect('view_cart')
+
+def remove_from_cart(request, ticket_id):
+    cart = request.session.get('cart', {})
+    if ticket_id in cart:
+        del cart[ticket_id]
+
+    request.session['cart'] = cart
+    messages.success(request, 'Билет удален из корзины.')
+    return redirect('view_cart')
+
+
+@transaction.atomic
+def checkout(request):
+    if request.method == 'POST':
+        cart = request.session.get('cart', {})
+        total_price = sum(TicketsFootball.objects.get(id=ticket_id).price * quantity for ticket_id, quantity in cart.items())
+        payment_method = request.POST.get('payment_method')
+
+        wallet, created = Wallet.objects.get_or_create(user=request.user, defaults={'balance': 0})
+
+        if payment_method == 'wallet' and wallet.balance < total_price:
+            messages.error(request, 'Недостаточно средств на кошельке')
+            return redirect('view_cart')
+
+        for ticket_id, quantity in cart.items():
+            try:
+                ticket = TicketsFootball.objects.get(id=ticket_id)
+            except TicketsFootball.DoesNotExist:
+                ticket = TicketsHockey.objects.get(id=ticket_id)
+            
+            if payment_method == 'wallet':
+                wallet.balance -= ticket.price * quantity
+                wallet.save()
+            
+            ticket.quantity -= quantity
+            ticket.save()
+
+            if isinstance(ticket, TicketsFootball):
+                FootballTicketPurchase.objects.create(user=request.user, ticket=ticket, quanty=quantity)
+            elif isinstance(ticket, TicketsHockey):
+                HockeyTicketPurchase.objects.create(user=request.user, ticket=ticket, quanty=quantity)
+
+        if payment_method == 'wallet':
+            messages.success(request, 'Билеты успешно куплены')
+            del request.session['cart']
+            return redirect('tickets')
+        elif payment_method == 'card':
+            payment = create_payment(total_price, request.build_absolute_uri(reverse('main')))
+            del request.session['cart']
+            return HttpResponseRedirect(payment.confirmation.confirmation_url)
+        else:
+            messages.error(request, 'Выберите метод оплаты')
+            return redirect('view_cart')
+    else:
+        messages.error(request, 'Неверный метод запроса')
+        return redirect('view_cart')
 def create_payment(total_price, return_url):
     Configuration.account_id = '383395'
     Configuration.secret_key = 'test_JXZA1vwsqfXxtMib4C-e6haHJHBqjNWWfYor_ESW7J4'
