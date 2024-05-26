@@ -37,7 +37,11 @@
         }
         .table {
         border-radius: 20px;
+
     }
+    .gold-highlight {
+    background-color: gold;
+}
 </style>
 {% endblock %}
 
@@ -72,7 +76,7 @@
                                 <p class="mt-2">{{ match.home_team }}</p> 
                             </div>
                             <div class="col-md-4 text-center">
-                                <p>VS</p>
+                                <p>Против</p>
                                 <p>Счёт: {{ match.score }}</p>
                             </div>
                             <div class="col-md-4 text-center">
@@ -96,13 +100,15 @@
                     <table class="table">
                         <thead>
                             <tr>
+                                <th>Место</th>
                                 <th>Команда</th>
                                 <th>Очки</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for team in teams %}
-                            <tr>
+                            <tr class="{% if forloop.first %}gold-highlight{% endif %}">
+                                <td>{{ forloop.counter }}</td>
                                 <td>{{ team.name }}</td>
                                 <td>
                                     {% if request.user.is_staff %}

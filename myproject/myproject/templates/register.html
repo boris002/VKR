@@ -1,27 +1,103 @@
-<!-- templates/register.html -->
 {% extends 'base.html' %}
+
+{% block extra_styles %}
+<style>
+    .card {
+        border-radius: 15px;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        padding: 0.75rem;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .btn-block {
+        padding: 0.75rem;
+        border-radius: 25px;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #004085;
+    }
+
+    .text-danger {
+        color: red;
+    }
+
+    .error-message {
+        color: red;
+        font-size: 0.875em;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="row">
-        <div class="col-md-6 offset-md-3">
-            <div class="card my-5">
-                <div class="card-body">
-                    <h2 class="card-title text-center">Регистрация</h2>
-                    <form method="post" class="mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card my-5 shadow-sm rounded">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-center mb-4">Регистрация</h2>
+                    <form id="registrationForm" method="post" class="mt-4">
                         {% csrf_token %}
-                        {% for field in form %}
-                            <div class="form-group">
-                                {{ field.label_tag }}
-                                {{ field }}
-                                {% if field.help_text %}
-                                    <small class="form-text text-muted">{{ field.help_text }}</small>
-                                {% endif %}
-                                {{ field.errors }}
-                            </div>
-                        {% endfor %}
+                        <div class="form-group mb-3">
+                            {{ form.username.label_tag }}
+                            {{ form.username }}
+                            {% if form.username.help_text %}
+                                <small class="form-text text-muted">{{ form.username.help_text }}</small>
+                            {% endif %}
+                            <div id="usernameError" class="error-message"></div>
+                        </div>
+                        <div class="form-group mb-3">
+                            {{ form.email.label_tag }}
+                            {{ form.email }}
+                            {% if form.email.help_text %}
+                                <small class="form-text text-muted">{{ form.email.help_text }}</small>
+                            {% endif %}
+                            <div id="emailError" class="error-message"></div>
+                        </div>
+                        <div class="form-group mb-3">
+                            {{ form.password1.label_tag }}
+                            {{ form.password1 }}
+                            {% if form.password1.help_text %}
+                                <small class="form-text text-muted">{{ form.password1.help_text }}</small>
+                            {% endif %}
+                            <div id="passwordError" class="error-message"></div>
+                        </div>
+                        <div class="form-group mb-3">
+                            {{ form.password2.label_tag }}
+                            {{ form.password2 }}
+                            {% if form.password2.help_text %}
+                                <small class="form-text text-muted">{{ form.password2.help_text }}</small>
+                            {% endif %}
+                            <div id="password2Error" class="error-message"></div>
+                        </div>
                         <div class="text-center">
-                            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+                            <button type="submit" class="btn btn-primary btn-block rounded-pill">Зарегистрироваться</button>
                         </div>
                     </form>
                 </div>
@@ -29,4 +105,56 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('registrationForm');
+        const usernameField = form.querySelector('#id_username');
+        const emailField = form.querySelector('#id_email');
+        const passwordField = form.querySelector('#id_password1');
+        const password2Field = form.querySelector('#id_password2');
+
+        usernameField.addEventListener('input', validateUsername);
+        emailField.addEventListener('input', validateEmail);
+        passwordField.addEventListener('input', validatePassword);
+        password2Field.addEventListener('input', validatePassword2);
+
+        function validateUsername() {
+            const usernameError = document.getElementById('usernameError');
+            if (usernameField.value.length < 5) {
+                usernameError.textContent = 'Имя пользователя должно содержать минимум 5 символов.';
+            } else {
+                usernameError.textContent = '';
+            }
+        }
+
+        function validateEmail() {
+            const emailError = document.getElementById('emailError');
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(emailField.value)) {
+                emailError.textContent = 'Введите корректный email.';
+            } else {
+                emailError.textContent = '';
+            }
+        }
+
+        function validatePassword() {
+            const passwordError = document.getElementById('passwordError');
+            if (passwordField.value.length < 8) {
+                passwordError.textContent = 'Пароль должен содержать минимум 8 символов.';
+            } else {
+                passwordError.textContent = '';
+            }
+        }
+
+        function validatePassword2() {
+            const password2Error = document.getElementById('password2Error');
+            if (password2Field.value !== passwordField.value) {
+                password2Error.textContent = 'Пароли не совпадают.';
+            } else {
+                password2Error.textContent = '';
+            }
+        }
+    });
+</script>
 {% endblock %}

@@ -32,8 +32,11 @@ custom_translations = {
     'Fakel Voronezh': 'Факел Воронеж',
     'Krylya Sovetov': 'Крылья Советов',
     'Rubin': 'Рубин Казань',
-    'Olimpiyskiy Stadion Fisht': 'Фишт арена Сочи'
-    # Добавьте другие нестандартные переводы сюда
+    'Olimpiyskiy Stadion Fisht': 'Фишт арена Сочи',
+    'Wolves' : 'Вулверхэмптон',
+    'Manchester City': 'Ман Сити',
+    'Crystal Palace' : 'Кристал Пэлас'
+    
 }
 
 def translate_text(text, dest_language='ru'):
@@ -126,7 +129,7 @@ def matches_view(request, id):
     ten_days_ago = today - timedelta(days=10)
 
     matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
-    cutoff_date = timezone.make_aware(datetime(2024, 4, 11, 0, 0, 0))
+    cutoff_date = timezone.make_aware(datetime(2024, 5, 25, 0, 0, 0))
 
     # Если дата в пределах последних 10 дней или данных в базе нет, или они не учтены, делаем запрос к API
     if not matches.exists() or matches.filter(accounted=False).exists():
@@ -454,7 +457,7 @@ def update_HockeyMatches_from_api(date, league, cutoff_date):
 
 @login_required   
 def tickets(request):
-    current_date = datetime.now().date()
+    current_date = timezone.now() + timedelta(hours=3)
     football_matches = TicketsFootball.objects.filter(id_matches__match_date__gte=current_date)
     hockey_matches = TicketsHockey.objects.filter(id_matches__match_date__gte=current_date)
     ticket_types = TicketsType.objects.all()
@@ -1155,10 +1158,12 @@ def edit_league_details(request, league_id):
 
         teams = LeagueScore.objects.filter(league=league)
         for team in teams:
-            team.points = int(request.POST.get(f'points_{team.id}', team.points))
-            team.save()
+            new_points = request.POST.get(f'points_{team.id}')
+            if new_points is not None:  # Check if the form contains this field
+                team.points = int(new_points)
+                team.save()
 
-        return redirect(f'football')  # Redirect to keep the filter
+        return redirect(request.META.get('HTTP_REFERER'))
 
     else:
         if selected_date:
@@ -1222,21 +1227,29 @@ def delete_news(request, news_id):
 
 @user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
 def create_or_edit_ticket(request, ticket_id=None, sport_type='football'):
-    TicketModel = TicketsFootball if sport_type == 'football' else TicketsHockey
+    if sport_type == 'football':
+        TicketModel = TicketsFootball
+        MatchModel = Match
+    else:
+        TicketModel = TicketsHockey
+        MatchModel = HockeyMatch
 
     if ticket_id:
         ticket = get_object_or_404(TicketModel, pk=ticket_id)
     else:
-        ticket = TicketModel()  # Creating a new instance
+        ticket = TicketModel()  # Создание нового экземпляра
 
     if request.method == 'POST':
         match_id = request.POST.get('id_matches')
         type_id = request.POST.get('id_type')
 
         if match_id:
-            match = get_object_or_404(Match, pk=match_id)
+            match = get_object_or_404(MatchModel, pk=match_id)
             ticket.id_matches = match
-            ticket.idFootball_liga = match.league  # Установите лигу напрямую из матча
+            if sport_type == 'football':
+                ticket.idFootball_liga = match.league  # Установите лигу напрямую из матча
+            else:
+                ticket.idHockey_league = match.league
 
         if type_id:
             ticket_type = get_object_or_404(TicketsType, pk=type_id)
@@ -1252,13 +1265,17 @@ def create_or_edit_ticket(request, ticket_id=None, sport_type='football'):
         else:
             messages.error(request, 'Ошибка сохранения билета. Пожалуйста, проверьте введённые данные.')
 
+    current_time_plus_3_hours = timezone.now() + timedelta(hours=3)
+    upcoming_matches = MatchModel.objects.filter(match_date__gt=current_time_plus_3_hours)
+
     context = {
         'ticket': ticket,
-        'matches': Match.objects.all(),
-        'ticket_types': TicketsType.objects.all(),  # Добавьте это в контекст
+        'matches': upcoming_matches,
+        'ticket_types': TicketsType.objects.all(),
         'sport_type': sport_type
     }
     return render(request, 'create_or_edit_ticket.html', context)
+
 
 @user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
 def delete_ticket(request, ticket_id, sport_type='football'):
