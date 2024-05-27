@@ -595,35 +595,35 @@ def checkout(request):
 
         wallet, created = Wallet.objects.get_or_create(user=request.user, defaults={'balance': 0})
 
-        if payment_method == 'wallet' and wallet.balance < total_price:
-            messages.error(request, 'Недостаточно средств на кошельке')
-            return redirect('view_cart')
+        if payment_method == 'wallet':
+            if wallet.balance < total_price:
+                messages.error(request, 'Недостаточно средств на кошельке')
+                return redirect('view_cart')
 
-        for ticket_id, quantity in cart.items():
-            try:
-                ticket = TicketsFootball.objects.get(id=ticket_id)
-            except TicketsFootball.DoesNotExist:
-                ticket = TicketsHockey.objects.get(id=ticket_id)
-            
-            if payment_method == 'wallet':
+            for ticket_id, quantity in cart.items():
+                try:
+                    ticket = TicketsFootball.objects.get(id=ticket_id)
+                except TicketsFootball.DoesNotExist:
+                    ticket = TicketsHockey.objects.get(id=ticket_id)
+
                 wallet.balance -= ticket.price * quantity
                 wallet.save()
-            
-            ticket.quantity -= quantity
-            ticket.save()
+                
+                ticket.quantity -= quantity
+                ticket.save()
 
-            if isinstance(ticket, TicketsFootball):
-                FootballTicketPurchase.objects.create(user=request.user, ticket=ticket, quanty=quantity)
-            elif isinstance(ticket, TicketsHockey):
-                HockeyTicketPurchase.objects.create(user=request.user, ticket=ticket, quanty=quantity)
+                if isinstance(ticket, TicketsFootball):
+                    FootballTicketPurchase.objects.create(user=request.user, ticket=ticket, quanty=quantity)
+                elif isinstance(ticket, TicketsHockey):
+                    HockeyTicketPurchase.objects.create(user=request.user, ticket=ticket, quanty=quantity)
 
-        if payment_method == 'wallet':
             messages.success(request, 'Билеты успешно куплены')
             del request.session['cart']
             return redirect('tickets')
         elif payment_method == 'card':
-            payment = create_payment(total_price, request.build_absolute_uri(reverse('main')))
-            del request.session['cart']
+            payment = create_payment(total_price, request.build_absolute_uri(reverse('payment_success')))
+            request.session['cart'] = cart
+            request.session['payment_method'] = payment_method
             return HttpResponseRedirect(payment.confirmation.confirmation_url)
         else:
             messages.error(request, 'Выберите метод оплаты')
@@ -631,6 +631,7 @@ def checkout(request):
     else:
         messages.error(request, 'Неверный метод запроса')
         return redirect('view_cart')
+
 def create_payment(total_price, return_url):
     Configuration.account_id = '383395'
     Configuration.secret_key = 'test_JXZA1vwsqfXxtMib4C-e6haHJHBqjNWWfYor_ESW7J4'
@@ -649,6 +650,33 @@ def create_payment(total_price, return_url):
     }, uuid.uuid4())
 
     return payment
+
+def payment_success(request):
+    cart = request.session.get('cart', {})
+    payment_method = request.session.get('payment_method')
+
+    if not cart or payment_method != 'card':
+        messages.error(request, 'Ошибка при обработке платежа')
+        return redirect('view_cart')
+
+    for ticket_id, quantity in cart.items():
+        try:
+            ticket = TicketsFootball.objects.get(id=ticket_id)
+        except TicketsFootball.DoesNotExist:
+            ticket = TicketsHockey.objects.get(id=ticket_id)
+
+        ticket.quantity -= quantity
+        ticket.save()
+
+        if isinstance(ticket, TicketsFootball):
+            FootballTicketPurchase.objects.create(user=request.user, ticket=ticket, quanty=quantity)
+        elif isinstance(ticket, TicketsHockey):
+            HockeyTicketPurchase.objects.create(user=request.user, ticket=ticket, quanty=quantity)
+
+    messages.success(request, 'Билеты успешно куплены')
+    del request.session['cart']
+    del request.session['payment_method']
+    return redirect('tickets')
 def cart_pay(total, quantity, request):
     if request.method == 'POST':
         # Получение данных из формы
@@ -664,8 +692,6 @@ def cart_pay_wallet(request):
     if request.method == 'POST':
         # Получение данных из формы
         amount = request.POST.get('amount')
-        card_number = request.POST.get('card_number')
-        expiry_date = request.POST.get('expiry_date')
 
         # Проверка на наличие суммы в запросе
         if not amount:
@@ -679,16 +705,46 @@ def cart_pay_wallet(request):
             messages.error(request, 'Неверный формат суммы платежа')
             return redirect('home')  # Перенаправление на главную страницу или другую страницу по вашему выбору
 
-        # После успешной обработки платежа
-        # Увеличение баланса кошелька пользователя на указанную сумму
+        payment = create_payment1(amount, request.build_absolute_uri(reverse('wallet_topup_success')))
+        request.session['topup_amount'] = float(amount)  # Сохраняем сумму пополнения в сессии
+
+        # Возвращение URL для перенаправления пользователя на страницу оплаты
+        return HttpResponseRedirect(payment.confirmation.confirmation_url)
+    return render(request, 'cart_pay_wallet.html')
+
+def create_payment1(amount, return_url):
+    Configuration.account_id = '383395'
+    Configuration.secret_key = 'test_JXZA1vwsqfXxtMib4C-e6haHJHBqjNWWfYor_ESW7J4'
+
+    payment = Payment.create({
+        "amount": {
+            "value": str(amount),
+            "currency": "RUB"
+        },
+        "confirmation": {
+            "type": "redirect",
+            "return_url": return_url
+        },
+        "capture": True,
+        "description": "Пополнение кошелька"
+    }, uuid.uuid4())
+
+    return payment
+
+def wallet_topup_success(request):
+    amount = request.session.get('topup_amount')
+
+    if amount:
         user_wallet = Wallet.objects.get(user=request.user)
-        user_wallet.balance += amount
+        user_wallet.balance += Decimal(amount)
         user_wallet.save()
 
-        messages.success(request, 'Платеж успешно обработан')
-        return redirect('main')  # Перенаправление на главную страницу или другую страницу по вашему выбору
+        messages.success(request, 'Кошелек успешно пополнен')
+        del request.session['topup_amount']
+    else:
+        messages.error(request, 'Ошибка при пополнении кошелька')
 
-    return render(request, 'cart_pay_wallet.html')
+    return redirect('main')
 
 def Basket_matches_view(request, id):
     league = get_object_or_404(BasketLeague, pk=id)
@@ -857,6 +913,8 @@ def Hockeymatch_details_view(request, league_id, match_id):
             'away2': away2.strip(),
             'home3': home3.strip(),
             'away3': away3.strip(),
+            'home_details': zip(home_goals_list, home_times_list),
+            'away_details': zip(away_goals_list, away_times_list),
         },
         'win': match.win,
         'date': match.match_date.strftime('%Y-%m-%d %H:%M'),
@@ -1177,6 +1235,47 @@ def edit_league_details(request, league_id):
             'matches': matches,
             'teams': teams,
             'selected_date': selected_date or ""  # Pass back to template to maintain state
+        })
+
+@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
+def edit_hockey_league_details(request, league_id):
+    league = get_object_or_404(HockeyLeague, pk=league_id)
+    selected_date = request.GET.get('matchDate')  # Получить дату из GET запроса
+
+    if request.method == 'POST':
+        # Обработка отправки формы
+        matches = HockeyMatch.objects.filter(league=league)
+        for match in matches:
+            match.score = request.POST.get(f'score_{match.id}', match.score)
+            match.first_period = request.POST.get(f'first_period_{match.id}', match.first_period)
+            match.second_period = request.POST.get(f'second_period_{match.id}', match.second_period)
+            match.third_period = request.POST.get(f'third_period_{match.id}', match.third_period)
+            match.overtimes = request.POST.get(f'overtimes_{match.id}', match.overtimes)
+            match.shotouts = request.POST.get(f'shotouts_{match.id}', match.shotouts)
+            match.Home_goals = request.POST.get(f'home_goals_{match.id}', match.Home_goals)
+            match.Away_goals = request.POST.get(f'away_goals_{match.id}', match.Away_goals)
+            match.time_Hgoals = request.POST.get(f'time_Hgoals_{match.id}', 0)
+            match.time_Agoals = request.POST.get(f'time_Agoals_{match.id}', 0)
+            match.Score_in_serias = request.POST.get(f'score_in_serias_{match.id}', match.Score_in_serias)
+            match.save()
+
+       # teams = LeagueScore.objects.filter(league=league)
+       
+
+        return redirect(request.META.get('HTTP_REFERER'))
+
+    else:
+        if selected_date:
+            matches = HockeyMatch.objects.filter(league=league, match_date__date=datetime.strptime(selected_date, '%Y-%m-%d'))
+        else:
+            matches = HockeyMatch.objects.filter(league=league)
+        #teams = LeagueScore.objects.filter(league=league).order_by('-points')
+
+        return render(request, 'edit_hockey_league.html', {
+            'league': league,
+            'matches': matches,
+            #'teams': teams,
+            'selected_date': selected_date or ""  # Передача обратно в шаблон для поддержания состояния
         })
 def news_view(request):
     news_list = News.objects.all().order_by('-Date')  # Получаем все новости, отсортированные по дате

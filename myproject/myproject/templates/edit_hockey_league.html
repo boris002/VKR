@@ -17,14 +17,38 @@
             <div class="col">
                 <div class="card h-100">
                     <div class="card-header">
-                        <img src="{{ match.home_team_logo }}" alt="{{ match.home_team }}" style="height:50px;">
+                        {% if match.home_team_logo %}
+                            <img src="{{ match.home_team_logo }}" alt="{{ match.home_team }}" style="height:50px;">
+                        {% endif %}
                         <strong>{{ match.home_team }}</strong> vs <strong>{{ match.away_team }}</strong>
-                        <img src="{{ match.away_team_logo }}" alt="{{ match.away_team }}" style="height:50px;">
+                        {% if match.away_team_logo %}
+                            <img src="{{ match.away_team_logo }}" alt="{{ match.away_team }}" style="height:50px;">
+                        {% endif %}
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
                             <label for="score_{{ match.id }}">Score:</label>
                             <input type="text" class="form-control" id="score_{{ match.id }}" name="score_{{ match.id }}" value="{{ match.score }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="first_period_{{ match.id }}">First Period:</label>
+                            <input type="text" class="form-control" id="first_period_{{ match.id }}" name="first_period_{{ match.id }}" value="{{ match.first_period }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="second_period_{{ match.id }}">Second Period:</label>
+                            <input type="text" class="form-control" id="second_period_{{ match.id }}" name="second_period_{{ match.id }}" value="{{ match.second_period }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="third_period_{{ match.id }}">Third Period:</label>
+                            <input type="text" class="form-control" id="third_period_{{ match.id }}" name="third_period_{{ match.id }}" value="{{ match.third_period }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="overtimes_{{ match.id }}">Overtimes:</label>
+                            <input type="text" class="form-control" id="overtimes_{{ match.id }}" name="overtimes_{{ match.id }}" value="{{ match.overtimes }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="shotouts_{{ match.id }}">Shotouts:</label>
+                            <input type="text" class="form-control" id="shotouts_{{ match.id }}" name="shotouts_{{ match.id }}" value="{{ match.shotouts }}">
                         </div>
                         <div class="mb-3">
                             <label for="home_goals_{{ match.id }}">Home Goals (Players):</label>
@@ -42,33 +66,16 @@
                             <label for="time_Agoals_{{ match.id }}">Time of Away Goals:</label>
                             <input type="text" class="form-control" id="time_Agoals_{{ match.id }}" name="time_Agoals_{{ match.id }}" value="{{ match.time_Agoals }}">
                         </div>
+                        <div class="mb-3">
+                            <label for="score_in_serias_{{ match.id }}">Score in Series:</label>
+                            <input type="text" class="form-control" id="score_in_serias_{{ match.id }}" name="score_in_serias_{{ match.id }}" value="{{ match.Score_in_serias }}">
+                        </div>
                     </div>
                 </div>
             </div>
             {% empty %}
             <p>No matches found for the selected date.</p>
             {% endfor %}
-        </div>
-        <h2 class="mt-4">League Table</h2>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Team</th>
-                        <th>Points</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for team in teams %}
-                    <tr>
-                        <td>{{ team.name }}</td>
-                        <td>
-                            <input type="number" class="form-control" id="points_{{ team.id }}" name="points_{{ team.id }}" value="{{ team.points }}">
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
         </div>
         <button type="submit" class="btn btn-primary mt-3">Сохранить изменения</button>
     </form>

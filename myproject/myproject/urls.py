@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views.views import main_page, matches_view, football_view, match_details_view,Hockey_matches_view, Hockey_view, tickets,buy_ticket, Basket_view, Basket_matches_view,Hockeymatch_details_view,Basketmatch_details_view, edit_league_details,create_news, news_view, news_detail_view,edit_news, delete_news, create_or_edit_ticket, delete_ticket,cart_pay_wallet, view_cart, checkout, add_to_cart,update_cart, remove_from_cart
+from .views.views import main_page, matches_view, football_view, match_details_view,Hockey_matches_view, Hockey_view, tickets,buy_ticket, Basket_view, Basket_matches_view,Hockeymatch_details_view,Basketmatch_details_view, edit_league_details,create_news, news_view, news_detail_view,edit_news, delete_news, create_or_edit_ticket, delete_ticket,cart_pay_wallet, view_cart, checkout, add_to_cart,update_cart, remove_from_cart, payment_success, wallet_topup_success, edit_hockey_league_details
 from .views.auth_views import CustomLoginView, CustomLogoutView, RegisterView, profile_view
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
@@ -44,6 +44,7 @@ urlpatterns = [
     path('password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),
     path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
     path('edit/<int:league_id>/', edit_league_details, name = 'edit'),
+    path('edit_hockey_league/<int:league_id>/', edit_hockey_league_details, name = 'edit_hockey_league'),
     path('news/', news_view, name='news'),
     path('news/create/', create_news, name='create_news'),
     path('news/<int:news_id>/', news_detail_view, name='news_detail'),
@@ -55,9 +56,11 @@ urlpatterns = [
     path('cart_pay_wallet/', cart_pay_wallet, name='cart_pay_wallet'),
     path('cart/', view_cart, name='view_cart'),
     path('checkout/', checkout, name='checkout'),
+    path('payment_success/', payment_success, name = 'payment_success'),
     path('add_to_cart/', add_to_cart, name='add_to_cart'),
     path('update_cart/', update_cart, name='update_cart'),
     path('remove_from_cart/<int:ticket_id>/', remove_from_cart, name='remove_from_cart'),
+    path('wallet_topup_success/', wallet_topup_success, name='wallet_topup_success'),
 
 
 

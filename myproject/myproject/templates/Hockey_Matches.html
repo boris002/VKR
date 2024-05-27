@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load templatehelpers %}
 
 {% block content %}
 {% block extra_styles %}
@@ -32,7 +33,9 @@
     <div class="container mt-4">
         <h1 class="text-center mb-4">Матчи и турнирная таблица для {{ league_name }}</h1>
         <p class="text-center">Дата: {{ selected_date }}</p>
-    
+        {% if request.user.is_staff or request.user|has_group:"journalist" %}
+        <a href="{% url 'edit_hockey_league' league_id=league_id %}" class="btn btn-warning">Редактировать</a>
+       {% endif %}
         <form action="{% url 'Hockey_Matches' id=league_id %}" method="get" class="mb-4">
             <div class="form-group">
                 <input type="date" name="date" class="form-control" value="{{ selected_date }}">
