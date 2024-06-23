@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Delete Football Liga</h2>
+<p>Are you sure you want to delete "{{ liga.name }}"?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{% url 'football_liga_list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

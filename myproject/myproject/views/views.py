@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet, News, TypeSport, NewsForm, FootballTicketPurchase, HockeyTicketPurchase, HockeyDivision, HockeyStandings, LeagueStatistic
+from myproject.models.model import Match,FootballLiga,LeagueScore, HockeyLeague, HockeyMatch,TicketsFootball, TicketsHockey, TicketsType,BasketLeague,BasketMatch, Wallet, News, TypeSport, NewsForm, FootballTicketPurchase, HockeyTicketPurchase, HockeyDivision, HockeyStandings, LeagueStatistic, FootballLigaForm, LeagueScoreForm, LeagueStatisticForm
 from myproject.api_settings import API_HEADERS_Football, API_HEADERS_Hockey, API_HEADERS_Basket
 import json
 from django.utils import timezone
@@ -129,7 +129,7 @@ def matches_view(request, id):
     ten_days_ago = today - timedelta(days=10)
 
     matches = Match.objects.filter(league=league, match_date__date=selected_date_obj.date())
-    cutoff_date = timezone.make_aware(datetime(2024, 5, 25, 0, 0, 0))
+    cutoff_date = timezone.make_aware(datetime(2024, 6, 20, 0, 0, 0))
 
     # Если дата в пределах последних 10 дней или данных в базе нет, или они не учтены, делаем запрос к API
     if not matches.exists() or matches.filter(accounted=False).exists():
@@ -159,7 +159,7 @@ def matches_view(request, id):
 def update_matches_from_api(date, league, cutoff_date):
     current_time = timezone.now()
     matches_for_date = Match.objects.filter(league=league, match_date__date=date)
-    #accounted_flag = matches_for_date.filter(accounted=0).exists()
+    accounted_flag = matches_for_date.filter(accounted=0).exists()
         
     try:
         last_save_time = matches_for_date.latest('Save_time').Save_time
@@ -234,7 +234,7 @@ def determine_winner(match_data):
         return translate_text(match_data['teams']['away']['name'])
     elif (match_data['goals']['home'] == match_data['goals']['away'] and match_data['goals']['home'] !='null' and match_data['goals']['away'] !='null'):
         return 'Ничья'
-    else:
+    elif (match_data['goals']['home'] =='null' and match_data['goals']['away'] =='null'):
         return 'Неопред'
 
 def match_details_view(request, league_id, match_id):
@@ -1376,10 +1376,65 @@ def create_or_edit_ticket(request, ticket_id=None, sport_type='football'):
     return render(request, 'create_or_edit_ticket.html', context)
 
 
-@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='journalist').exists())
+@user_passes_test(lambda u: u.is_staff or u.groups.filter(name='Manager').exists())
 def delete_ticket(request, ticket_id, sport_type='football'):
     TicketModel = TicketsFootball if sport_type == 'football' else TicketsHockey
     ticket = get_object_or_404(TicketModel, pk=ticket_id)
     ticket.delete()
     messages.success(request, 'Ticket deleted successfully.')
     return redirect('tickets')
+
+@user_passes_test(lambda u: u.is_staff )
+def football_liga_list(request):
+    ligas = FootballLiga.objects.all()
+    return render(request, 'football_liga_list.html', {'ligas': ligas})
+
+def football_liga_add(request):
+    if request.method == 'POST':
+        form = FootballLigaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('football_liga_list')
+    else:
+        form = FootballLigaForm()
+    return render(request, 'football_liga_form.html', {'form': form})
+
+def football_liga_edit(request, id):
+    liga = get_object_or_404(FootballLiga, id=id)
+    if request.method == 'POST':
+        form = FootballLigaForm(request.POST, instance=liga)
+        if form.is_valid():
+            form.save()
+            return redirect('football_liga_list')
+    else:
+        form = FootballLigaForm(instance=liga)
+    return render(request, 'football_liga_form.html', {'form': form})
+
+def football_liga_delete(request, id):
+    liga = get_object_or_404(FootballLiga, id=id)
+    if request.method == 'POST':
+        liga.delete()
+        return redirect('football_liga_list')
+    return render(request, 'football_liga_confirm_delete.html', {'liga': liga})
+
+def league_statistics_view(request):
+    if request.method == 'POST':
+        if 'edit_id' in request.POST:
+            # Обработка редактирования записи
+            instance = get_object_or_404(LeagueStatistic, id=request.POST.get('edit_id'))
+            form = LeagueStatisticForm(request.POST, instance=instance)
+        else:
+            # Обработка добавления новой записи
+            form = LeagueStatisticForm(request.POST)
+        
+        if form.is_valid():
+            form.save()
+            return redirect('league_statistics_view')
+    else:
+        form = LeagueStatisticForm()
+
+    league_statistics = LeagueStatistic.objects.all()
+    return render(request, 'league_statistics.html', {
+        'league_statistics': league_statistics,
+        'form': form,
+    })

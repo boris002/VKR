@@ -52,7 +52,9 @@
                         <li class="list-group-item">
                            Матч: {{ ticket.ticket.id_matches.home_team }} vs {{ ticket.ticket.id_matches.away_team }},
                            Дата матча: {{ ticket.ticket.id_matches.match_date|date:"d M Y H:i" }},
-                            Количество: {{ ticket.quanty }}  
+                           Тип билета: {{ ticket.ticket.id_type.name }},
+                           Количество: {{ ticket.quanty }}
+                              
                         </li>
                         {% endfor %}
                     </ul>

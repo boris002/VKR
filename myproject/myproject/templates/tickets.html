@@ -16,6 +16,8 @@
                     <p class="card-text">Дата матча: {{ match.id_matches.match_date }}</p>
                     <p class="card-text">Домашняя команда: {{ match.id_matches.home_team }}</p>
                     <p class="card-text">Гостевая команда: {{ match.id_matches.away_team }}</p>
+                    <p class="card-text">Тип билета: {{ match.id_type.name }}</p> 
+
                     <p class="card-text">Цена билета: {{ match.price }}</p>
                     <form action="{% url 'add_to_cart' %}" method="post">
                         {% csrf_token %}

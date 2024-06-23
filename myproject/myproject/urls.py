@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views.views import main_page, matches_view, football_view, match_details_view,Hockey_matches_view, Hockey_view, tickets,buy_ticket, Basket_view, Basket_matches_view,Hockeymatch_details_view,Basketmatch_details_view, edit_league_details,create_news, news_view, news_detail_view,edit_news, delete_news, create_or_edit_ticket, delete_ticket,cart_pay_wallet, view_cart, checkout, add_to_cart,update_cart, remove_from_cart, payment_success, wallet_topup_success, edit_hockey_league_details
+from .views.views import main_page, matches_view, football_view, match_details_view,Hockey_matches_view, Hockey_view, tickets,buy_ticket, Basket_view, Basket_matches_view,Hockeymatch_details_view,Basketmatch_details_view, edit_league_details,create_news, news_view, news_detail_view,edit_news, delete_news, create_or_edit_ticket, delete_ticket,cart_pay_wallet, view_cart, checkout, add_to_cart,update_cart, remove_from_cart, payment_success, wallet_topup_success, edit_hockey_league_details,football_liga_list,football_liga_add,football_liga_edit,football_liga_delete, league_statistics_view
 from .views.auth_views import CustomLoginView, CustomLogoutView, RegisterView, profile_view
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
@@ -61,6 +61,11 @@ urlpatterns = [
     path('update_cart/', update_cart, name='update_cart'),
     path('remove_from_cart/<int:ticket_id>/', remove_from_cart, name='remove_from_cart'),
     path('wallet_topup_success/', wallet_topup_success, name='wallet_topup_success'),
+    path('football_liga_list/', football_liga_list, name='football_liga_list'),
+    path('add/', football_liga_add, name='football_liga_add'),
+    path('edit/<int:id>/', football_liga_edit, name='football_liga_edit'),
+    path('delete/<int:id>/', football_liga_delete, name='football_liga_delete'),
+    path('league_statistics/', league_statistics_view, name='league_statistics_view'),
 
 
 

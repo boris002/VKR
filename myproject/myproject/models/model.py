@@ -20,12 +20,10 @@ class FootballLiga(models.Model):
     name = models.CharField(max_length=255)
     country = models.CharField(max_length=255)
     type = models.ForeignKey(TypeLeague, on_delete=models.CASCADE, null=True, blank=True, db_column='type_id')  # Добавление внешнего ключа
-
     class Meta:
         db_table = 'football_liga'
         verbose_name = 'Football Liga'
         verbose_name_plural = 'Football Ligas'
-
     def __str__(self):
         return self.name
 
@@ -73,6 +71,16 @@ class LeagueScore(models.Model):
     def __str__(self):
         return self.name
 
+class FootballLigaForm(forms.ModelForm):
+    class Meta:
+        model = FootballLiga
+        fields = ['name', 'country', 'type']
+
+class LeagueScoreForm(forms.ModelForm):
+    class Meta:
+        model = LeagueScore
+        fields = ['league', 'name', 'points']
+    
 class HockeyLeague(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
@@ -310,3 +318,8 @@ class LeagueStatistic(models.Model):
 
     def __str__(self):
         return f"{self.league.name} - {self.player_name}"
+
+class LeagueStatisticForm(forms.ModelForm):
+    class Meta:
+        model = LeagueStatistic
+        fields = ['league', 'player_name', 'goal']

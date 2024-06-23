@@ -48,6 +48,7 @@
                     <a href="{{ site_url }}">{% translate 'View site' %}</a> /
                     <a href="{% url 'create_news' %}">{% translate 'Создать новость' %}</a> /
                     <a href="{% url 'create_ticket' 'football' %}">{% translate 'Создать Футбольный билет' %}</a> /
+                    <a href="{% url 'football_liga_list' %}">{% translate 'Управление футбольными лигами' %}</a>/
 
                 {% endif %}
                 {% if user.is_active and user.is_staff %}

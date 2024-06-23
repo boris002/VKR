@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="text-center">Футбольные лиги</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Country</th>
+                        <th>Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for liga in ligas %}
+                    <tr>
+                        <td>{{ liga.name }}</td>
+                        <td>{{ liga.country }}</td>
+                        <td>{{ liga.type }}</td>
+                        <td>
+                            <a href="{% url 'football_liga_edit' liga.idFootball_liga %}" class="btn btn-primary">Редактировать</a>
+                            <form method="post" action="{% url 'football_liga_delete' liga.idFootball_liga %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="text-center">
+                <a href="{% url 'football_liga_add' %}" class="btn btn-success">добавить лигу</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
